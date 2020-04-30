@@ -34,8 +34,12 @@ namespace YALCT
 
         private ShaderDescription vertexShaderDesc;
         private Shader[] shaders;
+        private string currentFragmentShader;
 
         private ImGuiRenderer imGuiRenderer;
+        private ShaderEditor editor;
+
+        public ImGuiRenderer ImGuiRenderer => imGuiRenderer;
 
         public RuntimeContext(string[] args, GraphicsBackend backend = GraphicsBackend.Vulkan)
         {
@@ -83,7 +87,6 @@ namespace YALCT
         {
             CreateRenderQuad();
             commandList = factory.CreateCommandList();
-            CreateDynamicResources();
             CreateImGui();
         }
 
@@ -113,19 +116,34 @@ namespace YALCT
             graphicsDevice.UpdateBuffer(indexBuffer, 0, quadIndices);
         }
 
-        private void CreateDynamicResources()
+        public void CreateDynamicResources(string fragmentCode)
         {
             // shaders
+            string newFragmentShader = fragmentHeaderCode + fragmentCode;
+            if (currentFragmentShader != null && currentFragmentShader.Equals(newFragmentShader))
+            {
+                editor.SetError(null);
+                return;
+            }
             if (!isInitialized)
             {
                 vertexShaderDesc = CreateShaderDescription(VertexCode, ShaderStages.Vertex);
             }
-            else
+            Shader[] newShaders;
+            try
             {
+                ShaderDescription fragmentShaderDesc = CreateShaderDescription(newFragmentShader, ShaderStages.Fragment);
+                newShaders = factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
                 DisposeShaders();
+                shaders = newShaders;
+                currentFragmentShader = newFragmentShader;
+                editor.SetError(null);
             }
-            ShaderDescription fragmentShaderDesc = CreateShaderDescription(fragmentCode, ShaderStages.Fragment);
-            shaders = factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
+            catch (Exception e)
+            {
+                editor.SetError(e.Message);
+                return;
+            }
 
             // pipeline
             ResourceLayoutElementDescription[] layoutDescriptions = new ResourceLayoutElementDescription[]
@@ -181,8 +199,8 @@ namespace YALCT
                                               window.Width,
                                               window.Height,
                                               ColorSpaceHandling.Linear);
-            ImGui.StyleColorsDark();
-            ImGui.GetStyle().Alpha = 0.3f;
+            editor = new ShaderEditor(this);
+            editor.Apply();
         }
 
         private ShaderDescription CreateShaderDescription(string code, ShaderStages stage)
@@ -221,31 +239,13 @@ namespace YALCT
             runtimeData.Update(window, inputSnapshot, deltaTime);
 
             imGuiRenderer.Update(deltaTime, inputSnapshot);
-            SubmitImGui(deltaTime);
+            SubmitImGui(deltaTime, inputSnapshot);
         }
 
-        private void SubmitImGui(float deltaTime)
+        private void SubmitImGui(float deltaTime, InputSnapshot inputSnapshot)
         {
-            if (ImGui.BeginMainMenuBar())
-            {
-                if (ImGui.MenuItem("Run"))
-                {
-                    CreateDynamicResources();
-                }
-                string fps = $"{(int)MathF.Round(1f / deltaTime)}";
-                Vector2 fpsSize = ImGui.CalcTextSize(fps);
-                ImGui.SameLine(ImGui.GetWindowWidth() - fpsSize.X - 20);
-                ImGui.Text(fps);
-                ImGui.EndMainMenuBar();
-            }
-            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
-            if (ImGui.Begin("Shader Editor"))
-            {
-                Vector2 editorWindowSize = ImGui.GetWindowSize();
-                ImGui.InputTextMultiline("", ref fragmentCode, MaxEditorStringLength, new Vector2(editorWindowSize.X - 15, editorWindowSize.Y - 40));
-                ImGui.End();
-            }
-            ImGui.PopStyleVar();
+            editor.SubmitUI(deltaTime, inputSnapshot);
+            editor.Update(deltaTime);
         }
 
         private void Render(float deltaTime)
@@ -326,7 +326,6 @@ namespace YALCT
             graphicsDevice.Dispose();
         }
 
-        private const int MaxEditorStringLength = 1000000;
         private const string VertexCode = @"
 #version 450
 
@@ -336,8 +335,7 @@ void main()
 {
     gl_Position = vec4(Position, 1);
 }";
-
-        private string fragmentCode = @"
+        private const string fragmentHeaderCode = @"
 #version 450
 
 layout(set = 0, binding = 0) uniform RuntimeData
@@ -349,14 +347,7 @@ layout(set = 0, binding = 0) uniform RuntimeData
     int frame;
 };
 
-layout(location = 0) out vec4 out_Color;
-
-void main()
-{
-    float x = gl_FragCoord.x / resolution.x; 
-    float y = gl_FragCoord.y / resolution.y;
-    out_Color = vec4(abs(cos(time)),x,y,1);
-}";
+layout(location = 0) out vec4 out_Color;";
 
     }
 }
