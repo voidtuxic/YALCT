@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using System.Text;
+using ImGuiNET;
 using Veldrid;
 using Veldrid.Sdl2;
 using Veldrid.SPIRV;
@@ -33,6 +34,8 @@ namespace YALCT
 
         private ShaderDescription vertexShaderDesc;
         private Shader[] shaders;
+
+        private ImGuiRenderer imGuiRenderer;
 
         public RuntimeContext(string[] args, GraphicsBackend backend = GraphicsBackend.Vulkan)
         {
@@ -81,6 +84,7 @@ namespace YALCT
             CreateRenderQuad();
             commandList = factory.CreateCommandList();
             CreateDynamicResources();
+            CreateImGui();
         }
 
         private void CreateRenderQuad()
@@ -120,7 +124,7 @@ namespace YALCT
             {
                 DisposeShaders();
             }
-            ShaderDescription fragmentShaderDesc = CreateShaderDescription(FragmentCode, ShaderStages.Fragment);
+            ShaderDescription fragmentShaderDesc = CreateShaderDescription(fragmentCode, ShaderStages.Fragment);
             shaders = factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
 
             // pipeline
@@ -170,6 +174,17 @@ namespace YALCT
             resourceSet.Name = "YALCT Resource Set";
         }
 
+        private void CreateImGui()
+        {
+            imGuiRenderer = new ImGuiRenderer(graphicsDevice,
+                                              swapchain.Framebuffer.OutputDescription,
+                                              window.Width,
+                                              window.Height,
+                                              ColorSpaceHandling.Linear);
+            ImGui.StyleColorsDark();
+            ImGui.GetStyle().Alpha = 0.3f;
+        }
+
         private ShaderDescription CreateShaderDescription(string code, ShaderStages stage)
         {
             byte[] data = Encoding.UTF8.GetBytes(code);
@@ -191,17 +206,63 @@ namespace YALCT
                     {
                         Resize();
                     }
+                    Update(deltaTime);
                     Render(deltaTime);
                 }
+
+                previousTime = newTime;
             }
             graphicsDevice.WaitForIdle();
         }
 
-        private void Render(float deltaTime)
+        private void Update(float deltaTime)
         {
             InputSnapshot inputSnapshot = window.PumpEvents();
             runtimeData.Update(window, inputSnapshot, deltaTime);
 
+            imGuiRenderer.Update(deltaTime, inputSnapshot);
+            SubmitImGui(deltaTime);
+        }
+
+        private void SubmitImGui(float deltaTime)
+        {
+            if (ImGui.BeginMainMenuBar())
+            {
+                if (ImGui.MenuItem("Run"))
+                {
+                    CreateDynamicResources();
+                }
+                string fps = $"{(int)MathF.Round(1f / deltaTime)}";
+                Vector2 fpsSize = ImGui.CalcTextSize(fps);
+                ImGui.SameLine(ImGui.GetWindowWidth() - fpsSize.X - 20);
+                ImGui.Text(fps);
+                ImGui.EndMainMenuBar();
+            }
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
+            if (ImGui.Begin("Shader Editor"))
+            {
+                Vector2 editorWindowSize = ImGui.GetWindowSize();
+                ImGui.InputTextMultiline("", ref fragmentCode, MaxEditorStringLength, new Vector2(editorWindowSize.X - 15, editorWindowSize.Y - 40));
+                ImGui.End();
+            }
+            ImGui.PopStyleVar();
+        }
+
+        private void Render(float deltaTime)
+        {
+            RenderShader();
+            RenderImGui();
+            graphicsDevice.WaitForIdle();
+
+            // doing a final check if window was closed in middle of rendering
+            if (window.Exists)
+            {
+                graphicsDevice.SwapBuffers(swapchain);
+            }
+        }
+
+        private void RenderShader()
+        {
             commandList.Begin();
             commandList.UpdateBuffer(runtimeDataBuffer, 0, runtimeData);
 
@@ -223,19 +284,23 @@ namespace YALCT
             commandList.End();
 
             graphicsDevice.SubmitCommands(commandList);
-            graphicsDevice.WaitForIdle();
+        }
 
-            // doing a final check if window was closed in middle of rendering
-            if (window.Exists)
-            {
-                graphicsDevice.SwapBuffers(swapchain);
-            }
+        private void RenderImGui()
+        {
+            commandList.Begin();
+            commandList.SetFramebuffer(swapchain.Framebuffer);
+            imGuiRenderer.Render(graphicsDevice, commandList);
+            commandList.End();
+
+            graphicsDevice.SubmitCommands(commandList);
         }
 
         private void Resize()
         {
             windowResized = false;
             graphicsDevice.ResizeMainWindow((uint)window.Width, (uint)window.Height);
+            imGuiRenderer.WindowResized(window.Width, window.Height);
         }
 
         private void DisposeShaders()
@@ -249,6 +314,7 @@ namespace YALCT
 
         public void Dispose()
         {
+            imGuiRenderer.Dispose();
             pipeline.Dispose();
             DisposeShaders();
             resourceSet.Dispose();
@@ -260,6 +326,7 @@ namespace YALCT
             graphicsDevice.Dispose();
         }
 
+        private const int MaxEditorStringLength = 1000000;
         private const string VertexCode = @"
 #version 450
 
@@ -270,7 +337,7 @@ void main()
     gl_Position = vec4(Position, 1);
 }";
 
-        private const string FragmentCode = @"
+        private string fragmentCode = @"
 #version 450
 
 layout(set = 0, binding = 0) uniform RuntimeData
@@ -288,7 +355,7 @@ void main()
 {
     float x = gl_FragCoord.x / resolution.x; 
     float y = gl_FragCoord.y / resolution.y;
-    out_Color = vec4(1,x,y,1);
+    out_Color = vec4(abs(cos(time)),x,y,1);
 }";
 
     }
