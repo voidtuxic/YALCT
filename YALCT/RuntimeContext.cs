@@ -37,7 +37,7 @@ namespace YALCT
         private string currentFragmentShader;
 
         private ImGuiRenderer imGuiRenderer;
-        private ShaderEditor editor;
+        private ImGuiController uiController;
 
         public ImGuiRenderer ImGuiRenderer => imGuiRenderer;
         public GraphicsDevice GraphicsDevice => graphicsDevice;
@@ -123,7 +123,7 @@ namespace YALCT
             string newFragmentShader = fragmentHeaderCode + fragmentCode;
             if (currentFragmentShader != null && currentFragmentShader.Equals(newFragmentShader))
             {
-                editor.SetError(null);
+                uiController.SetError(null);
                 return;
             }
             if (!isInitialized)
@@ -138,11 +138,11 @@ namespace YALCT
                 DisposeShaders();
                 shaders = newShaders;
                 currentFragmentShader = newFragmentShader;
-                editor.SetError(null);
+                uiController.SetError(null);
             }
             catch (Exception e)
             {
-                editor.SetError(e.Message);
+                uiController.SetError(e.Message);
                 return;
             }
 
@@ -200,8 +200,8 @@ namespace YALCT
                                               window.Width,
                                               window.Height,
                                               ColorSpaceHandling.Linear);
-            editor = new ShaderEditor(this);
-            editor.Apply();
+            uiController = new ImGuiController(this);
+            uiController.SetState(UIState.Editor);
         }
 
         private ShaderDescription CreateShaderDescription(string code, ShaderStages stage)
@@ -215,7 +215,6 @@ namespace YALCT
             DateTime previousTime = DateTime.Now;
             while (window.Exists)
             {
-                if (!isInitialized) continue;
                 DateTime newTime = DateTime.Now;
                 float deltaTime = (float)(newTime - previousTime).TotalSeconds;
 
@@ -245,8 +244,8 @@ namespace YALCT
 
         private void SubmitImGui(float deltaTime, InputSnapshot inputSnapshot)
         {
-            editor.SubmitUI(deltaTime, inputSnapshot);
-            editor.Update(deltaTime);
+            uiController.SubmitUI(deltaTime, inputSnapshot);
+            uiController.Update(deltaTime);
         }
 
         private void Render(float deltaTime)
@@ -270,18 +269,20 @@ namespace YALCT
             commandList.SetFramebuffer(swapchain.Framebuffer);
             commandList.ClearColorTarget(0, RgbaFloat.Black);
 
-            commandList.SetPipeline(pipeline);
-            commandList.SetGraphicsResourceSet(0, resourceSet);
-            commandList.SetVertexBuffer(0, vertexBuffer);
-            commandList.SetIndexBuffer(indexBuffer, IndexFormat.UInt32);
+            if (isInitialized)
+            {
+                commandList.SetPipeline(pipeline);
+                commandList.SetGraphicsResourceSet(0, resourceSet);
+                commandList.SetVertexBuffer(0, vertexBuffer);
+                commandList.SetIndexBuffer(indexBuffer, IndexFormat.UInt32);
 
-            commandList.DrawIndexed(
-                indexCount: 6,
-                instanceCount: 1,
-                indexStart: 0,
-                vertexOffset: 0,
-                instanceStart: 0);
-
+                commandList.DrawIndexed(
+                    indexCount: 6,
+                    instanceCount: 1,
+                    indexStart: 0,
+                    vertexOffset: 0,
+                    instanceStart: 0);
+            }
             commandList.End();
 
             graphicsDevice.SubmitCommands(commandList);

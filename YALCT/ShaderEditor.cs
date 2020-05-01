@@ -6,21 +6,17 @@ using Veldrid;
 
 namespace YALCT
 {
-    public class ShaderEditor
+
+    public class ShaderEditor : IImGuiComponent
     {
         private const int MAXEDITORSTRINGLENGTH = 1000000;
         private const float AUTOAPPLYINTERVAL = 1f;
         private const float HIDEUIHELPTEXTDURATION = 5f;
 
-        private readonly RuntimeContext context;
-        private readonly ImFontPtr mainFont;
-        private readonly ImFontPtr editorFont;
-
         private bool showUI = true;
         private float hideUIHelpTextDelta = 0;
         private bool autoApply = true;
         private float autoApplyCurrentInterval = 0;
-        private float uiAlpha = 0.5f;
 
         private string errorMessage;
 
@@ -38,28 +34,21 @@ void main()
     out_Color = vec4(0,x,y,1);
 }";
 
-        public ShaderEditor(RuntimeContext context)
+        public ImGuiController Controller { get; private set; }
+
+        public ShaderEditor(ImGuiController controller)
         {
-            this.context = context;
+            Controller = controller;
+        }
 
-            // font setup
-            ImGui.EndFrame();
-            var io = ImGui.GetIO();
-            io.Fonts.Clear();
-            mainFont = io.Fonts.AddFontFromFileTTF(Path.Combine(Directory.GetCurrentDirectory(), "fonts/OpenSans-Regular.ttf"), 16.0f);
-            editorFont = io.Fonts.AddFontFromFileTTF(Path.Combine(Directory.GetCurrentDirectory(), "fonts/FiraCode-Regular.ttf"), 16.0f);
-            context.GraphicsDevice.WaitForIdle();
-            context.ImGuiRenderer.RecreateFontDeviceTexture();
-            ImGui.NewFrame();
-
-            // style setup
-            ImGui.StyleColorsDark();
-            ImGui.GetStyle().Alpha = uiAlpha;
+        public void Initialize()
+        {
+            Apply();
         }
 
         public void SubmitUI(float deltaTime, InputSnapshot inputSnapshot)
         {
-            ImGui.PushFont(mainFont);
+            ImGui.PushFont(Controller.MainFont);
             if (showUI)
             {
                 SubmitMainMenu(deltaTime);
@@ -79,7 +68,7 @@ void main()
                 {
                     if (keyEvent.Down && keyEvent.Key == Key.Space)
                     {
-                        ImGui.GetStyle().Alpha = uiAlpha;
+                        ImGui.GetStyle().Alpha = Controller.UiAlpha;
                         showUI = true;
                         break;
                     }
@@ -110,12 +99,12 @@ void main()
                     autoApplyCurrentInterval = 0;
                 }
 
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20);
-                ImGui.SetNextItemWidth(100);
-                if (ImGui.SliderFloat("UI Alpha", ref uiAlpha, 0.2f, 1))
-                {
-                    ImGui.GetStyle().Alpha = uiAlpha;
-                }
+                // ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20);
+                // ImGui.SetNextItemWidth(100);
+                // if (ImGui.SliderFloat("UI Alpha", ref Controller.UiAlpha, 0.2f, 1))
+                // {
+                //     ImGui.GetStyle().Alpha = Controller.UiAlpha;
+                // }
 
                 string fps = $"{(int)MathF.Round(1f / deltaTime)}";
                 Vector2 fpsSize = ImGui.CalcTextSize(fps);
@@ -130,7 +119,7 @@ void main()
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
             if (ImGui.Begin("Shader Editor"))
             {
-                ImGui.PushFont(editorFont);
+                ImGui.PushFont(Controller.EditorFont);
                 Vector2 editorWindowSize = ImGui.GetWindowSize();
                 float bottomMargin = 40;
                 if (errorMessage != null)
@@ -172,7 +161,7 @@ void main()
 
         public void Apply()
         {
-            context.CreateDynamicResources(fragmentCode);
+            Controller.Context.CreateDynamicResources(fragmentCode);
         }
     }
 }
