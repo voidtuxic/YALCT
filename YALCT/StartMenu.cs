@@ -26,7 +26,6 @@ namespace YALCT
 
         public void SubmitUI(float deltaTime, InputSnapshot inputSnapshot)
         {
-            ImGui.PushFont(Controller.MainFont);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
             ImGui.SetNextWindowSize(new Vector2(MENUWIDTH, MENUHEIGHT));
             ImGui.SetNextWindowPos(new Vector2(Controller.Context.Width / 2 - MENUWIDTH / 2,
@@ -37,10 +36,13 @@ namespace YALCT
                 {
                     Controller.SetState(UIState.Editor);
                 }
+                if (ImGui.Button("Options", new Vector2(MENUWIDTH - 15, 40)))
+                {
+                    Controller.ShowOptions = true;
+                }
                 ImGui.End();
             }
             ImGui.PopStyleVar();
-            ImGui.PopFont();
         }
 
         public void Update(float deltaTime)

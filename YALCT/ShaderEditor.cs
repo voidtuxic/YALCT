@@ -87,6 +87,10 @@ void main()
                     {
                         Controller.SetState(UIState.StartMenu);
                     }
+                    if (ImGui.MenuItem("Options"))
+                    {
+                        Controller.ShowOptions = true;
+                    }
                     ImGui.EndMenu();
                 }
 
@@ -106,13 +110,6 @@ void main()
                 {
                     autoApplyCurrentInterval = 0;
                 }
-
-                // ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20);
-                // ImGui.SetNextItemWidth(100);
-                // if (ImGui.SliderFloat("UI Alpha", ref Controller.UiAlpha, 0.2f, 1))
-                // {
-                //     ImGui.GetStyle().Alpha = Controller.UiAlpha;
-                // }
 
                 string fps = $"{(int)MathF.Round(1f / deltaTime)}";
                 Vector2 fpsSize = ImGui.CalcTextSize(fps);
