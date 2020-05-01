@@ -7,7 +7,7 @@ namespace YALCT
     public class StartMenu : IImGuiComponent
     {
         private const float MENUWIDTH = 200;
-        private const float MENUHEIGHT = 400;
+        private const float MENUHEIGHT = 255;
 
         public ImGuiController Controller { get; private set; }
 
@@ -32,17 +32,26 @@ namespace YALCT
                                                Controller.Context.Height / 2 - MENUHEIGHT / 2));
             if (ImGui.Begin("Yet Another Live Coding Tool", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
             {
-                if (ImGui.Button("Create", new Vector2(MENUWIDTH - 15, 40)))
+                Vector2 buttonSize = new Vector2(MENUWIDTH - 15, 40);
+                if (ImGui.Button("Create", buttonSize))
                 {
                     Controller.SetState(UIState.Editor);
                 }
-                if (ImGui.Button("Load", new Vector2(MENUWIDTH - 15, 40)))
+                if (ImGui.Button("Load", buttonSize))
                 {
                     Controller.LoadFile();
                 }
-                if (ImGui.Button("Options", new Vector2(MENUWIDTH - 15, 40)))
+                if (ImGui.Button("Import Shadertoy", buttonSize))
+                {
+                    Controller.LoadFile(true);
+                }
+                if (ImGui.Button("Options", buttonSize))
                 {
                     Controller.ShowOptions = true;
+                }
+                if (ImGui.Button("Quit", buttonSize))
+                {
+                    Controller.Context.Quit();
                 }
                 ImGui.End();
             }

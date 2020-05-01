@@ -32,6 +32,7 @@ namespace YALCT
         private bool open = true;
         private bool showAll = false;
         private bool saveMode = false;
+        private bool shadertoyMode = false;
         private string path;
         private string filename = "shader.glsl";
         private readonly FilePickerItem upperItem = new FilePickerItem(true, "..", true);
@@ -42,6 +43,7 @@ namespace YALCT
 
         public ImGuiController Controller { get; private set; }
         public bool SaveMode { get => saveMode; set => saveMode = value; }
+        public bool ShadertoyMode { get => shadertoyMode; set => shadertoyMode = value; }
 
         public FilePicker(ImGuiController controller)
         {
@@ -101,7 +103,7 @@ namespace YALCT
             ImGui.SetNextWindowSize(new Vector2(MENUWIDTH, MENUHEIGHT));
             ImGui.SetNextWindowPos(new Vector2(Controller.Context.Width / 2 - MENUWIDTH / 2,
                                                Controller.Context.Height / 2 - MENUHEIGHT / 2));
-            string windowName = saveMode ? "Save" : "Load";
+            string windowName = saveMode ? "Save" : shadertoyMode ? "Import shadertoy" : "Load";
             if (ImGui.Begin($"{windowName} file", ref open, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
             {
                 string tmpPath = path;
@@ -113,9 +115,17 @@ namespace YALCT
                         SetPath(tmpPath);
                     }
                 }
-                if (!saveMode && ImGui.Checkbox("Show all", ref showAll))
+                if (!saveMode)
                 {
-                    LoadFileList();
+                    if (ImGui.Checkbox("Show all", ref showAll))
+                    {
+                        LoadFileList();
+                    }
+                    if (shadertoyMode)
+                    {
+                        ImGui.SameLine(100);
+                        ImGui.TextColored(RgbaFloat.Red.ToVector4(), "Warning: Shadertoy import isn't guaranteed to succeed !");
+                    }
                 }
                 if (saveMode)
                 {
@@ -194,9 +204,14 @@ namespace YALCT
         public void LoadShader(string shaderContent)
         {
             ShaderEditor editor = Controller.GetComponent<ShaderEditor>();
+            if (shadertoyMode)
+            {
+                shaderContent = FilePickerHelper.ConvertShadertoy(shaderContent);
+            }
             editor.LoadShader(shaderContent);
             Controller.SetState(UIState.Editor);
         }
+
 
         private void SaveShader()
         {

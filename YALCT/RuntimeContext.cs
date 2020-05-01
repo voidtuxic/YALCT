@@ -85,6 +85,11 @@ namespace YALCT
             CreateResources();
         }
 
+        public void Quit()
+        {
+            window.Close();
+        }
+
         public void CreateResources()
         {
             CreateRenderQuad();

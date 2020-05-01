@@ -139,15 +139,17 @@ namespace YALCT
             GetCurrentComponent().SetError(errorMessage);
         }
 
-        public void LoadFile()
+        public void LoadFile(bool shadertoy = false)
         {
             GetComponent<FilePicker>().SaveMode = false;
+            GetComponent<FilePicker>().ShadertoyMode = shadertoy;
             SetState(UIState.FilePicker);
         }
 
         public void SaveFile()
         {
             GetComponent<FilePicker>().SaveMode = true;
+            GetComponent<FilePicker>().ShadertoyMode = false;
             SetState(UIState.FilePicker);
         }
     }

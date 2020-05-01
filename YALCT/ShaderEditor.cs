@@ -84,13 +84,13 @@ void main()
             {
                 if (ImGui.BeginMenu("File"))
                 {
-                    if (ImGui.MenuItem("Start menu"))
-                    {
-                        Controller.SetState(UIState.StartMenu);
-                    }
                     if (ImGui.MenuItem("Load"))
                     {
                         Controller.LoadFile();
+                    }
+                    if (ImGui.MenuItem("Import Shadertoy"))
+                    {
+                        Controller.LoadFile(true);
                     }
                     if (ImGui.MenuItem("Save"))
                     {
@@ -100,9 +100,18 @@ void main()
                     {
                         Controller.SaveFile();
                     }
+                    ImGui.Separator();
+                    if (ImGui.MenuItem("Start menu"))
+                    {
+                        Controller.SetState(UIState.StartMenu);
+                    }
                     if (ImGui.MenuItem("Options"))
                     {
                         Controller.ShowOptions = true;
+                    }
+                    if (ImGui.MenuItem("Quit"))
+                    {
+                        Controller.Context.Quit();
                     }
                     ImGui.EndMenu();
                 }

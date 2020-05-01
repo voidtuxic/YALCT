@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace YALCT
 {
@@ -294,6 +295,19 @@ namespace YALCT
             public static char BS = (char)8; // Back Space
             public static char CR = (char)13; // Carriage Return
             public static char SUB = (char)26; // Substitute
+        }
+
+        public static string ConvertShadertoy(string shaderContent)
+        {
+            string transformedContent = Regex.Replace(shaderContent, @"mainImage *\( *out *vec4 *fragColor *, *in *vec2 *fragCoord *\)", "main()");
+            return transformedContent
+                .Replace("iResolution", "resolution")
+                .Replace("iMouse", "mouse")
+                .Replace("iTime", "time")
+                .Replace("fragColor", "out_Color")
+                .Replace("fragCoord.x", "gl_FragCoord.x")
+                .Replace("fragCoord.y", "gl_FragCoord.y")
+                .Replace("fragCoord", "gl_FragCoord.xy");
         }
     }
 }
