@@ -144,6 +144,7 @@ void main()
         private void SubmitEditorWindow()
         {
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
+            ImGui.SetNextWindowSizeConstraints(Vector2.One * 500, Vector2.One * Controller.Context.Width);
             if (ImGui.Begin("Shader Editor"))
             {
                 ImGui.PushFont(Controller.EditorFont);
