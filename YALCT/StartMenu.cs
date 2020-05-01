@@ -38,7 +38,7 @@ namespace YALCT
                 }
                 if (ImGui.Button("Load", new Vector2(MENUWIDTH - 15, 40)))
                 {
-                    Controller.SetState(UIState.FilePicker);
+                    Controller.LoadFile();
                 }
                 if (ImGui.Button("Options", new Vector2(MENUWIDTH - 15, 40)))
                 {

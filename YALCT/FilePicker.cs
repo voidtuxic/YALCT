@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
@@ -30,7 +31,9 @@ namespace YALCT
 
         private bool open = true;
         private bool showAll = false;
+        private bool saveMode = false;
         private string path;
+        private string filename = "shader.glsl";
         private readonly FilePickerItem upperItem = new FilePickerItem(true, "..", true);
         private readonly List<FilePickerItem> files = new List<FilePickerItem>();
 
@@ -38,6 +41,7 @@ namespace YALCT
         private float errorMessageTime;
 
         public ImGuiController Controller { get; private set; }
+        public bool SaveMode { get => saveMode; set => saveMode = value; }
 
         public FilePicker(ImGuiController controller)
         {
@@ -74,11 +78,14 @@ namespace YALCT
                 files.Add(new FilePickerItem(true, $"{RemoveItemPathMarkup(folder)}/"));
             }
 
-            string[] currentFiles = Directory.GetFiles(path);
-            foreach (string file in currentFiles)
+            if (!saveMode)
             {
-                if (!showAll && FilePickerHelper.IsIgnoredExtension(file)) continue;
-                files.Add(new FilePickerItem(false, RemoveItemPathMarkup(file)));
+                string[] currentFiles = Directory.GetFiles(path);
+                foreach (string file in currentFiles)
+                {
+                    if (!showAll && FilePickerHelper.IsIgnoredExtension(file)) continue;
+                    files.Add(new FilePickerItem(false, RemoveItemPathMarkup(file)));
+                }
             }
         }
 
@@ -94,7 +101,8 @@ namespace YALCT
             ImGui.SetNextWindowSize(new Vector2(MENUWIDTH, MENUHEIGHT));
             ImGui.SetNextWindowPos(new Vector2(Controller.Context.Width / 2 - MENUWIDTH / 2,
                                                Controller.Context.Height / 2 - MENUHEIGHT / 2));
-            if (ImGui.Begin("Load file", ref open, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
+            string windowName = saveMode ? "Save" : "Load";
+            if (ImGui.Begin($"{windowName} file", ref open, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
             {
                 string tmpPath = path;
                 ImGui.SetNextItemWidth(MENUWIDTH - 90);
@@ -105,9 +113,27 @@ namespace YALCT
                         SetPath(tmpPath);
                     }
                 }
-                if (ImGui.Checkbox("Show all", ref showAll))
+                if (!saveMode && ImGui.Checkbox("Show all", ref showAll))
                 {
                     LoadFileList();
+                }
+                if (saveMode)
+                {
+                    ImGui.SetNextItemWidth(MENUWIDTH - 190);
+                    if (ImGui.InputText("Saved file name", ref filename, MAXPATHLENGTH, ImGuiInputTextFlags.EnterReturnsTrue))
+                    {
+                        string filePath = Path.Combine(path, filename);
+                        if (File.Exists(filePath))
+                        {
+                            // not really an error but user should know
+                            SetError("File already exists");
+                        }
+                    }
+                    ImGui.SameLine(MENUWIDTH - 80);
+                    if (ImGui.Button("Save shader"))
+                    {
+                        SaveShader();
+                    }
                 }
                 if (ImGui.BeginChild("currentfiles", Vector2.Zero, true, ImGuiWindowFlags.HorizontalScrollbar))
                 {
@@ -161,6 +187,7 @@ namespace YALCT
                 return;
             }
             SetError(null);
+            filename = item.Name;
             LoadShader(content);
         }
 
@@ -169,6 +196,19 @@ namespace YALCT
             ShaderEditor editor = Controller.GetComponent<ShaderEditor>();
             editor.LoadShader(shaderContent);
             Controller.SetState(UIState.Editor);
+        }
+
+        private void SaveShader()
+        {
+            ShaderEditor editor = Controller.GetComponent<ShaderEditor>();
+            SaveShader(editor.FragmentCode);
+            Controller.GoBack();
+        }
+
+        public void SaveShader(string fragmentCode)
+        {
+            string filePath = Path.Combine(path, filename);
+            File.WriteAllText(filePath, fragmentCode, Encoding.UTF8);
         }
 
         public void Update(float deltaTime)

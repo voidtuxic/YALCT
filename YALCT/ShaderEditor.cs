@@ -35,6 +35,7 @@ void main()
 }";
 
         public ImGuiController Controller { get; private set; }
+        public string FragmentCode => fragmentCode;
 
         public ShaderEditor(ImGuiController controller)
         {
@@ -89,7 +90,15 @@ void main()
                     }
                     if (ImGui.MenuItem("Load"))
                     {
-                        Controller.SetState(UIState.FilePicker);
+                        Controller.LoadFile();
+                    }
+                    if (ImGui.MenuItem("Save"))
+                    {
+                        Controller.GetComponent<FilePicker>().SaveShader(fragmentCode);
+                    }
+                    if (ImGui.MenuItem("Save as..."))
+                    {
+                        Controller.SaveFile();
                     }
                     if (ImGui.MenuItem("Options"))
                     {

@@ -134,9 +134,21 @@ namespace YALCT
             GetCurrentComponent().Update(deltaTime);
         }
 
-        internal void SetError(string errorMessage)
+        public void SetError(string errorMessage)
         {
             GetCurrentComponent().SetError(errorMessage);
+        }
+
+        public void LoadFile()
+        {
+            GetComponent<FilePicker>().SaveMode = false;
+            SetState(UIState.FilePicker);
+        }
+
+        public void SaveFile()
+        {
+            GetComponent<FilePicker>().SaveMode = true;
+            SetState(UIState.FilePicker);
         }
     }
 }

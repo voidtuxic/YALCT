@@ -57,7 +57,7 @@ namespace YALCT
             WindowCreateInfo windowCI = new WindowCreateInfo()
             {
                 WindowInitialState = WindowState.Maximized,
-                WindowTitle = "Yet Another Live Coding Tool",
+                WindowTitle = $"Yet Another Live Coding Tool ({backend})",
                 WindowWidth = 200,
                 WindowHeight = 200
             };
