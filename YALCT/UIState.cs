@@ -4,5 +4,6 @@ namespace YALCT
     {
         StartMenu,
         Editor,
+        FilePicker
     }
 }

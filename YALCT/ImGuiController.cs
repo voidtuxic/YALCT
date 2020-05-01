@@ -16,6 +16,7 @@ namespace YALCT
         private readonly ImFontPtr mainFont;
         private readonly ImFontPtr editorFont;
 
+        private UIState previousState;
         private UIState state;
         private readonly Dictionary<UIState, IImGuiComponent> components = new Dictionary<UIState, IImGuiComponent>();
 
@@ -50,6 +51,7 @@ namespace YALCT
             // component setup
             components.Add(UIState.StartMenu, new StartMenu(this));
             components.Add(UIState.Editor, new ShaderEditor(this));
+            components.Add(UIState.FilePicker, new FilePicker(this));
         }
 
         public void Initialize()
@@ -59,14 +61,39 @@ namespace YALCT
             SetState(UIState.StartMenu);
         }
 
+        public void GoBack()
+        {
+            SetState(previousState);
+        }
+
         public void SetState(UIState newState)
         {
             if (!components.ContainsKey(newState))
             {
                 throw new NotSupportedException($"No state {newState} mapped to a UI component");
             }
+            previousState = state;
             state = newState;
             GetCurrentComponent().Initialize();
+        }
+
+        public T GetComponent<T>()
+            where T : IImGuiComponent
+        {
+            IImGuiComponent selectedComponent = null;
+            foreach (IImGuiComponent component in components.Values)
+            {
+                if (component.GetType().Equals(typeof(T)))
+                {
+                    selectedComponent = component;
+                    break;
+                }
+            }
+            if (selectedComponent == null)
+            {
+                throw new NullReferenceException($"No UI component of type {typeof(T).FullName}");
+            }
+            return (T)selectedComponent;
         }
 
         public IImGuiComponent GetCurrentComponent()

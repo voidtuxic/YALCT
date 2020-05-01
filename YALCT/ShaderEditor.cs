@@ -9,7 +9,7 @@ namespace YALCT
 
     public class ShaderEditor : IImGuiComponent
     {
-        private const int MAXEDITORSTRINGLENGTH = 1000000;
+        public const int MAXEDITORSTRINGLENGTH = 1000000; // man this is shitty tho
         private const float AUTOAPPLYINTERVAL = 1f;
         private const float HIDEUIHELPTEXTDURATION = 5f;
 
@@ -86,6 +86,10 @@ void main()
                     if (ImGui.MenuItem("Start menu"))
                     {
                         Controller.SetState(UIState.StartMenu);
+                    }
+                    if (ImGui.MenuItem("Load"))
+                    {
+                        Controller.SetState(UIState.FilePicker);
                     }
                     if (ImGui.MenuItem("Options"))
                     {
@@ -167,6 +171,12 @@ void main()
         public void Apply()
         {
             Controller.Context.CreateDynamicResources(fragmentCode);
+        }
+
+        public void LoadShader(string shaderContent)
+        {
+            fragmentCode = shaderContent;
+            Apply();
         }
     }
 }
