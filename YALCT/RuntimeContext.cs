@@ -41,6 +41,8 @@ namespace YALCT
 
         public ImGuiRenderer ImGuiRenderer => imGuiRenderer;
         public GraphicsDevice GraphicsDevice => graphicsDevice;
+        public int Width => window.Width;
+        public int Height => window.Height;
 
         public RuntimeContext(string[] args, GraphicsBackend backend = GraphicsBackend.Vulkan)
         {
@@ -81,7 +83,6 @@ namespace YALCT
             swapchain = graphicsDevice.MainSwapchain;
             swapchain.Name = "YALTC Main Swapchain";
             CreateResources();
-            isInitialized = true;
         }
 
         public void CreateResources()
@@ -191,6 +192,7 @@ namespace YALCT
             resourceSet?.Dispose();
             resourceSet = factory.CreateResourceSet(resourceSetDescription);
             resourceSet.Name = "YALCT Resource Set";
+            isInitialized = true;
         }
 
         private void CreateImGui()
@@ -201,7 +203,7 @@ namespace YALCT
                                               window.Height,
                                               ColorSpaceHandling.Linear);
             uiController = new ImGuiController(this);
-            uiController.SetState(UIState.Editor);
+            uiController.Initialize();
         }
 
         private ShaderDescription CreateShaderDescription(string code, ShaderStages stage)
@@ -264,13 +266,13 @@ namespace YALCT
         private void RenderShader()
         {
             commandList.Begin();
-            commandList.UpdateBuffer(runtimeDataBuffer, 0, runtimeData);
 
             commandList.SetFramebuffer(swapchain.Framebuffer);
             commandList.ClearColorTarget(0, RgbaFloat.Black);
 
             if (isInitialized)
             {
+                commandList.UpdateBuffer(runtimeDataBuffer, 0, runtimeData);
                 commandList.SetPipeline(pipeline);
                 commandList.SetGraphicsResourceSet(0, resourceSet);
                 commandList.SetVertexBuffer(0, vertexBuffer);
@@ -317,12 +319,12 @@ namespace YALCT
         public void Dispose()
         {
             imGuiRenderer.Dispose();
-            pipeline.Dispose();
+            pipeline?.Dispose();
             DisposeShaders();
-            resourceSet.Dispose();
-            resourceLayout.Dispose();
-            commandList.Dispose();
-            runtimeDataBuffer.Dispose();
+            resourceSet?.Dispose();
+            resourceLayout?.Dispose();
+            commandList?.Dispose();
+            runtimeDataBuffer?.Dispose();
             indexBuffer.Dispose();
             vertexBuffer.Dispose();
             graphicsDevice.Dispose();

@@ -81,13 +81,21 @@ void main()
         {
             if (ImGui.BeginMainMenuBar())
             {
+                if (ImGui.BeginMenu("File"))
+                {
+                    if (ImGui.MenuItem("Start menu"))
+                    {
+                        Controller.SetState(UIState.StartMenu);
+                    }
+                    ImGui.EndMenu();
+                }
+
                 if (ImGui.MenuItem("Hide UI"))
                 {
                     showUI = false;
                     hideUIHelpTextDelta = 0;
                 }
 
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20);
                 if (ImGui.MenuItem("Apply"))
                 {
                     Apply();

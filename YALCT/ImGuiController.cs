@@ -42,7 +42,15 @@ namespace YALCT
             ImGui.GetStyle().Alpha = uiAlpha;
 
             // component setup
+            components.Add(UIState.StartMenu, new StartMenu(this));
             components.Add(UIState.Editor, new ShaderEditor(this));
+        }
+
+        public void Initialize()
+        {
+            // show default shader
+            components[UIState.Editor].Initialize();
+            SetState(UIState.StartMenu);
         }
 
         public void SetState(UIState newState)
