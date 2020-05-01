@@ -44,7 +44,7 @@ namespace YALCT
         public int Width => window.Width;
         public int Height => window.Height;
 
-        public RuntimeContext(string[] args, GraphicsBackend backend = GraphicsBackend.Vulkan)
+        public RuntimeContext(GraphicsBackend backend)
         {
             this.backend = backend;
             Initialize();
