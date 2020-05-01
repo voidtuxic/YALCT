@@ -48,6 +48,7 @@ void main()
             io.Fonts.Clear();
             mainFont = io.Fonts.AddFontFromFileTTF(Path.Combine(Directory.GetCurrentDirectory(), "fonts/OpenSans-Regular.ttf"), 16.0f);
             editorFont = io.Fonts.AddFontFromFileTTF(Path.Combine(Directory.GetCurrentDirectory(), "fonts/FiraCode-Regular.ttf"), 16.0f);
+            context.GraphicsDevice.WaitForIdle();
             context.ImGuiRenderer.RecreateFontDeviceTexture();
             ImGui.NewFrame();
 

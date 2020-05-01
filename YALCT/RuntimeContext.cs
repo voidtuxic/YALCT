@@ -40,6 +40,7 @@ namespace YALCT
         private ShaderEditor editor;
 
         public ImGuiRenderer ImGuiRenderer => imGuiRenderer;
+        public GraphicsDevice GraphicsDevice => graphicsDevice;
 
         public RuntimeContext(string[] args, GraphicsBackend backend = GraphicsBackend.Vulkan)
         {
