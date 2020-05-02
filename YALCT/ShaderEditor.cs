@@ -28,7 +28,8 @@ namespace YALCT
         private string fps = "";
         private float fpsUpdateCurrentInterval = 0;
 
-        private string errorMessage;
+        private string previousError = null;
+        private readonly List<string> errorMessages = new List<string>();
 
         private string fragmentCode = @"// Available inputs
 // mouse (vec4) : x,y => position, z => mouse 1 down, z => mouse 2 down
@@ -165,13 +166,6 @@ void main()
             {
                 ImGui.PushFont(Controller.EditorFont);
                 Vector2 editorWindowSize = ImGui.GetWindowSize();
-                // TODO get rid of this crap right here
-                if (errorMessage != null)
-                {
-                    ImGui.PushTextWrapPos();
-                    ImGui.TextColored(RgbaFloat.Red.ToVector4(), errorMessage);
-                    ImGui.PopTextWrapPos();
-                }
                 if (ImGui.BeginChild("editor", Vector2.Zero, true))
                 {
                     // handle basic input
@@ -217,9 +211,16 @@ void main()
                     {
                         string line = fragmentCodeLines[i];
                         string lineNumber = $"{i + Controller.Context.FragmentHeaderLineCount}";
+                        bool isError = errorMessages.Any(msg => msg.StartsWith($"{lineNumber}:"));
                         bool isEdited = i == editorSelectedLineIndex;
-                        ImGui.TextColored(isEdited ? RgbaFloat.Green.ToVector4() : RgbaFloat.LightGrey.ToVector4(), lineNumber);
+                        ImGui.TextColored(
+                            isEdited ? RgbaFloat.Green.ToVector4() : isError ? RgbaFloat.Red.ToVector4() : RgbaFloat.LightGrey.ToVector4(),
+                            lineNumber);
                         ImGui.SameLine(50);
+                        if (isError)
+                        {
+                            ImGui.PushStyleColor(ImGuiCol.Text, RgbaFloat.Red.ToVector4());
+                        }
                         if (isEdited)
                         {
                             ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, Vector2.Zero);
@@ -253,11 +254,29 @@ void main()
                         {
                             SetSelectedLine(i);
                         }
+                        if (isError)
+                        {
+                            ImGui.PopStyleColor(1);
+                        }
                     }
                     ImGui.EndChild();
                 }
                 ImGui.PopFont();
                 ImGui.End();
+            }
+            if (errorMessages.Count != 0)
+            {
+                ImGui.SetNextWindowSizeConstraints(new Vector2(500, 16), new Vector2(500, 500));
+                ImGui.BeginTooltip();
+                ImGui.PushTextWrapPos();
+                for (int i = 0; i < errorMessages.Count; i++)
+                {
+                    string errorMessage = errorMessages[i];
+                    if (string.IsNullOrWhiteSpace(errorMessage)) continue;
+                    ImGui.TextColored(RgbaFloat.Red.ToVector4(), errorMessage);
+                }
+                ImGui.PopTextWrapPos();
+                ImGui.EndTooltip();
             }
             ImGui.PopStyleVar();
         }
@@ -300,7 +319,16 @@ void main()
 
         public void SetError(string error)
         {
-            errorMessage = error;
+            if (error == previousError) return;
+            errorMessages.Clear();
+            if (error != null)
+            {
+                errorMessages.AddRange(Regex.Split(
+                    error.Replace("Compilation failed: ", "")
+                        .Replace("<veldrid-spirv-input>:", ""),
+                    "\r\n|\r|\n"));
+            }
+            previousError = error;
         }
 
         public void Apply()
