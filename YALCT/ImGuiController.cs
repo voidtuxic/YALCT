@@ -26,7 +26,7 @@ namespace YALCT
 #else
         private bool fullscreen = true;
 #endif
-        private float uiAlpha = 0.5f;
+        private float uiAlpha = 0.75f;
 
         public RuntimeContext Context => context;
         public ImFontPtr MainFont => mainFont;

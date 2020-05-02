@@ -13,6 +13,7 @@ namespace YALCT
     {
         public const int MAXEDITORSTRINGLENGTH = 1000000; // man this is shitty tho
         private const float AUTOAPPLYINTERVAL = 1f;
+        private const float FPSUPDATEINTERVAL = 0.25f;
         private const float HIDEUIHELPTEXTDURATION = 5f;
 
         private bool showUI = true;
@@ -23,6 +24,9 @@ namespace YALCT
         private int editorSelectedLineIndex = -1;
         private string editorSelectedLineContent = null;
         private int editorSelectedLineCursorPosition = -1;
+
+        private string fps = "";
+        private float fpsUpdateCurrentInterval = 0;
 
         private string errorMessage;
 
@@ -140,8 +144,12 @@ void main()
                 {
                     autoApplyCurrentInterval = 0;
                 }
-
-                string fps = $"{(int)MathF.Round(1f / deltaTime)}";
+                fpsUpdateCurrentInterval += deltaTime;
+                if (fpsUpdateCurrentInterval >= FPSUPDATEINTERVAL)
+                {
+                    fpsUpdateCurrentInterval = 0;
+                    fps = $"{(int)MathF.Round(1f / deltaTime)}";
+                }
                 Vector2 fpsSize = ImGui.CalcTextSize(fps);
                 ImGui.SameLine(ImGui.GetWindowWidth() - fpsSize.X - 20);
                 ImGui.Text(fps);
@@ -214,6 +222,7 @@ void main()
                         ImGui.SameLine(50);
                         if (isEdited)
                         {
+                            ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, Vector2.Zero);
                             ImGui.PushItemWidth(-1);
                             // taken from https://github.com/mellinoe/ImGui.NET/blob/0b9c9ea07d720ac0c4e382deb8f08de30703a9a3/src/ImGui.NET.SampleProgram/MemoryEditor.cs#L128
                             // which is not ideal
@@ -237,6 +246,7 @@ void main()
                                 fragmentCodeLines[editorSelectedLineIndex] = editorSelectedLineContent;
                             }
                             ImGui.PopItemWidth();
+                            ImGui.PopStyleVar(1);
                             editorSelectedLineCursorPosition = cursorPos;
                         }
                         else if (ImGui.Selectable(line))
