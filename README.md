@@ -1,5 +1,7 @@
 # Yet Another Live Coding Tool
 
+![Build](https://github.com/Calebsem/YALCT/workflows/Build%20codebase/badge.svg)
+
 A glsl live coding tool strongly inspired by [Shadertoy](https://www.shadertoy.com/), but as a cross platform cross graphics API desktop application. Code in modern GLSL and view your shaders using the (almost) full power of your computer's graphics APIs.
 
 Why? Because I wanted to train on [Veldrid](https://veldrid.dev), I love live coding despite not contributing a lot to it, and Shadertoy is a really fun thing. There's also a part of me who wants to show that dotnet is fun, not only for Windows and for boring aspnet and big IT service companies. Veldrid helps a lot in this sense.
@@ -19,6 +21,12 @@ Credits in this hectic gif:
 - supports Windows 10, Linux and MacOS
 
 ## Usage
+
+### Download release
+
+Requires [.Net Core 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) runtime for running. Extract files to whatever folder you wish and launch YALCT executable through your file explorer or via CLI [for backend switching](#running-different-graphics-apis).
+
+Currently only the Windows prebuilt version are available, check out [the latest release page](https://github.com/Calebsem/YALCT/releases/latest) to download it. CI building and other platforms are in the works.
 
 ### Building
 
