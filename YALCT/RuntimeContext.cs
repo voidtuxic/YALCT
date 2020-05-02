@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using System.Text;
+using System.Text.RegularExpressions;
 using ImGuiNET;
 using Veldrid;
 using Veldrid.Sdl2;
@@ -11,8 +12,8 @@ namespace YALCT
 {
     public class RuntimeContext : IDisposable
     {
-        Sdl2Window window;
-        bool windowResized = false;
+        private Sdl2Window window;
+        private bool windowResized = false;
 
         private GraphicsBackend backend;
         private bool isInitialized;
@@ -35,6 +36,7 @@ namespace YALCT
         private ShaderDescription vertexShaderDesc;
         private Shader[] shaders;
         private string currentFragmentShader;
+        private int fragmentHeaderLineCount = -1;
 
         private ImGuiRenderer imGuiRenderer;
         private ImGuiController uiController;
@@ -43,6 +45,18 @@ namespace YALCT
         public GraphicsDevice GraphicsDevice => graphicsDevice;
         public int Width => window.Width;
         public int Height => window.Height;
+        public Sdl2Window Window => window;
+        public int FragmentHeaderLineCount
+        {
+            get
+            {
+                if (fragmentHeaderLineCount == -1)
+                {
+                    fragmentHeaderLineCount = Regex.Split(fragmentHeaderCode, "\r\n|\r|\n").Length;
+                }
+                return fragmentHeaderLineCount;
+            }
+        }
 
         public RuntimeContext(GraphicsBackend backend)
         {
@@ -56,7 +70,11 @@ namespace YALCT
             // SDL init
             WindowCreateInfo windowCI = new WindowCreateInfo()
             {
+#if DEBUG
                 WindowInitialState = WindowState.Maximized,
+#else
+                WindowInitialState = WindowState.BorderlessFullScreen,
+#endif
                 WindowTitle = $"Yet Another Live Coding Tool ({backend})",
                 WindowWidth = 200,
                 WindowHeight = 200
@@ -344,9 +362,7 @@ void main()
 {
     gl_Position = vec4(Position, 1);
 }";
-        private const string fragmentHeaderCode = @"
-#version 450
-
+        public const string fragmentHeaderCode = @"#version 450
 layout(set = 0, binding = 0) uniform RuntimeData
 {
     vec4 mouse;
@@ -355,8 +371,6 @@ layout(set = 0, binding = 0) uniform RuntimeData
     float deltaTime;
     int frame;
 };
-
 layout(location = 0) out vec4 out_Color;";
-
     }
 }

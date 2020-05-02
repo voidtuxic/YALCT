@@ -32,7 +32,7 @@ namespace YALCT
                                                Controller.Context.Height / 2 - MENUHEIGHT / 2));
             if (ImGui.Begin("Yet Another Live Coding Tool", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
             {
-                Vector2 buttonSize = new Vector2(MENUWIDTH - 15, 40);
+                Vector2 buttonSize = new Vector2(MENUWIDTH - 16, 40);
                 if (ImGui.Button("Create", buttonSize))
                 {
                     Controller.SetState(UIState.Editor);

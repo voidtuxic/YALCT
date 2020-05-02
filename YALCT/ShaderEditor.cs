@@ -1,6 +1,8 @@
 using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
+using System.Text.RegularExpressions;
 using ImGuiNET;
 using Veldrid;
 
@@ -11,6 +13,7 @@ namespace YALCT
     {
         public const int MAXEDITORSTRINGLENGTH = 1000000; // man this is shitty tho
         private const float AUTOAPPLYINTERVAL = 1f;
+        private const float FPSUPDATEINTERVAL = 0.25f;
         private const float HIDEUIHELPTEXTDURATION = 5f;
 
         private bool showUI = true;
@@ -18,7 +21,16 @@ namespace YALCT
         private bool autoApply = true;
         private float autoApplyCurrentInterval = 0;
 
-        private string errorMessage;
+        private bool basicMode = false;
+        private int editorSelectedLineIndex = -1;
+        private string editorSelectedLineContent = null;
+        private int editorSelectedLineCursorPosition = -1;
+
+        private string fps = "";
+        private float fpsUpdateCurrentInterval = 0;
+
+        private string previousError = null;
+        private readonly List<string> errorMessages = new List<string>();
 
         private string fragmentCode = @"// Available inputs
 // mouse (vec4) : x,y => position, z => mouse 1 down, z => mouse 2 down
@@ -33,6 +45,7 @@ void main()
     float y = gl_FragCoord.y / resolution.y;
     out_Color = vec4(0,x,y,1);
 }";
+        private readonly List<string> fragmentCodeLines = new List<string>();
 
         public ImGuiController Controller { get; private set; }
         public string FragmentCode => fragmentCode;
@@ -44,6 +57,7 @@ void main()
 
         public void Initialize()
         {
+            SplitLines();
             Apply();
         }
 
@@ -132,8 +146,12 @@ void main()
                 {
                     autoApplyCurrentInterval = 0;
                 }
-
-                string fps = $"{(int)MathF.Round(1f / deltaTime)}";
+                fpsUpdateCurrentInterval += deltaTime;
+                if (fpsUpdateCurrentInterval >= FPSUPDATEINTERVAL)
+                {
+                    fpsUpdateCurrentInterval = 0;
+                    fps = $"{(int)MathF.Round(1f / deltaTime)}";
+                }
                 Vector2 fpsSize = ImGui.CalcTextSize(fps);
                 ImGui.SameLine(ImGui.GetWindowWidth() - fpsSize.X - 20);
                 ImGui.Text(fps);
@@ -141,32 +159,180 @@ void main()
             }
         }
 
-        private void SubmitEditorWindow()
+        private unsafe void SubmitEditorWindow()
         {
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
             ImGui.SetNextWindowSizeConstraints(Vector2.One * 500, Vector2.One * Controller.Context.Width);
             if (ImGui.Begin("Shader Editor"))
             {
                 ImGui.PushFont(Controller.EditorFont);
-                Vector2 editorWindowSize = ImGui.GetWindowSize();
-                float bottomMargin = 40;
-                if (errorMessage != null)
+                if (ImGui.BeginTabBar("editor mode"))
                 {
-                    ImGui.PushTextWrapPos();
-                    ImGui.TextColored(RgbaFloat.Red.ToVector4(), errorMessage);
-                    ImGui.PopTextWrapPos();
-                    Vector2 errorSize = ImGui.GetItemRectSize();
-                    bottomMargin = errorSize.Y * 2f + 15f; // sshh no tears
+                    if (ImGui.BeginTabItem("Advanced"))
+                    {
+                        basicMode = false;
+                        SubmitAdvancedEditor();
+                        ImGui.EndTabItem();
+                    }
+                    if (ImGui.BeginTabItem("Basic"))
+                    {
+                        basicMode = true;
+                        if (ImGui.BeginChild("editor basic", Vector2.Zero, true))
+                        {
+                            Vector2 editorWindowSize = ImGui.GetWindowSize();
+                            float textSize = ImGui.CalcTextSize(fragmentCode).Y + 32;
+                            ImGui.PushItemWidth(-1);
+                            ImGui.InputTextMultiline("",
+                                                     ref fragmentCode,
+                                                     MAXEDITORSTRINGLENGTH,
+                                                     new Vector2(editorWindowSize.X - 16, textSize > editorWindowSize.Y ? textSize : editorWindowSize.Y - 16),
+                                                     ImGuiInputTextFlags.AllowTabInput);
+                            ImGui.PopItemWidth();
+                        }
+                        ImGui.EndTabItem();
+                    }
+                    ImGui.EndTabBar();
                 }
-                ImGui.InputTextMultiline("",
-                                         ref fragmentCode,
-                                         MAXEDITORSTRINGLENGTH,
-                                         new Vector2(editorWindowSize.X - 15, editorWindowSize.Y - bottomMargin),
-                                         ImGuiInputTextFlags.AllowTabInput);
                 ImGui.PopFont();
                 ImGui.End();
             }
+            if (errorMessages.Count != 0)
+            {
+                ImGui.SetNextWindowSizeConstraints(new Vector2(500, 16), new Vector2(500, 500));
+                ImGui.BeginTooltip();
+                ImGui.PushTextWrapPos();
+                for (int i = 0; i < errorMessages.Count; i++)
+                {
+                    string errorMessage = errorMessages[i];
+                    if (string.IsNullOrWhiteSpace(errorMessage)) continue;
+                    ImGui.TextColored(RgbaFloat.Red.ToVector4(), errorMessage);
+                }
+                ImGui.PopTextWrapPos();
+                ImGui.EndTooltip();
+            }
             ImGui.PopStyleVar();
+        }
+
+        private unsafe void SubmitAdvancedEditor()
+        {
+            if (ImGui.BeginChild("editor", Vector2.Zero, true))
+            {
+                // handle basic input
+                if (editorSelectedLineIndex != -1)
+                {
+                    if ((editorSelectedLineCursorPosition == 0 && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.LeftArrow), false))
+                        || ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.UpArrow), true))
+                    {
+                        SetSelectedLine(editorSelectedLineIndex - 1);
+                    }
+                    if ((editorSelectedLineCursorPosition == editorSelectedLineContent.Length && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.RightArrow), false))
+                        || ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.DownArrow), true))
+                    {
+                        SetSelectedLine(editorSelectedLineIndex + 1);
+                    }
+                    if (ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Enter), true))
+                    {
+                        string newLineContent = "";
+                        if (editorSelectedLineCursorPosition != editorSelectedLineContent.Length)
+                        {
+                            fragmentCodeLines[editorSelectedLineIndex] = editorSelectedLineContent.Take(editorSelectedLineCursorPosition).ToSystemString();
+                            newLineContent = editorSelectedLineContent.Skip(editorSelectedLineCursorPosition).ToSystemString();
+                        }
+                        fragmentCodeLines.Insert(editorSelectedLineIndex + 1, newLineContent);
+                        SetSelectedLine(editorSelectedLineIndex + 1);
+                    }
+                    if (editorSelectedLineIndex > 0)
+                    {
+                        if (editorSelectedLineCursorPosition == 0 && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.Backspace), true))
+                        {
+                            if (!string.IsNullOrEmpty(editorSelectedLineContent))
+                            {
+                                fragmentCodeLines[editorSelectedLineIndex - 1] += editorSelectedLineContent;
+                            }
+                            fragmentCodeLines.RemoveAt(editorSelectedLineIndex);
+                            SetSelectedLine(editorSelectedLineIndex - 1);
+                        }
+                    }
+                }
+
+                // draw lines
+                for (int i = 0; i < fragmentCodeLines.Count; i++)
+                {
+                    string line = fragmentCodeLines[i];
+                    string lineNumber = $"{i + Controller.Context.FragmentHeaderLineCount}";
+                    bool isError = errorMessages.Any(msg => msg.StartsWith($"{lineNumber}:"));
+                    bool isEdited = i == editorSelectedLineIndex;
+                    ImGui.TextColored(
+                        isEdited ? RgbaFloat.Green.ToVector4() : isError ? RgbaFloat.Red.ToVector4() : RgbaFloat.LightGrey.ToVector4(),
+                        lineNumber);
+                    ImGui.SameLine(50);
+                    if (isError)
+                    {
+                        ImGui.PushStyleColor(ImGuiCol.Text, RgbaFloat.Red.ToVector4());
+                    }
+                    if (isEdited)
+                    {
+                        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, Vector2.Zero);
+                        ImGui.PushItemWidth(-1);
+                        // taken from https://github.com/mellinoe/ImGui.NET/blob/0b9c9ea07d720ac0c4e382deb8f08de30703a9a3/src/ImGui.NET.SampleProgram/MemoryEditor.cs#L128
+                        // which is not ideal
+                        ImGuiInputTextCallback callback = (data) =>
+                        {
+                            int* p_cursor_pos = (int*)data->UserData;
+
+                            if (ImGuiNative.ImGuiInputTextCallbackData_HasSelection(data) == 0)
+                                *p_cursor_pos = data->CursorPos;
+                            return 0;
+                        };
+                        int cursorPos = -1;
+                        const ImGuiInputTextFlags flags = ImGuiInputTextFlags.AllowTabInput | ImGuiInputTextFlags.CallbackAlways;
+                        if (ImGui.InputText(lineNumber,
+                                            ref editorSelectedLineContent,
+                                            1000,
+                                            flags,
+                                            callback,
+                                            (IntPtr)(&cursorPos)))
+                        {
+                            fragmentCodeLines[editorSelectedLineIndex] = editorSelectedLineContent;
+                        }
+                        ImGui.PopItemWidth();
+                        ImGui.PopStyleVar(1);
+                        editorSelectedLineCursorPosition = cursorPos;
+                    }
+                    else if (ImGui.Selectable(line))
+                    {
+                        SetSelectedLine(i);
+                    }
+                    if (isError)
+                    {
+                        ImGui.PopStyleColor(1);
+                    }
+                }
+                ImGui.EndChild();
+            }
+        }
+
+        private void SetSelectedLine(int i)
+        {
+            if (i >= 0 && i < fragmentCodeLines.Count)
+            {
+                editorSelectedLineIndex = i;
+                ImGui.SetKeyboardFocusHere(1);
+                editorSelectedLineContent = fragmentCodeLines[i];
+            }
+        }
+
+        private void SplitLines()
+        {
+            editorSelectedLineIndex = -1;
+            editorSelectedLineContent = null;
+            fragmentCodeLines.Clear();
+            fragmentCodeLines.AddRange(Regex.Split(fragmentCode, "\r\n|\r|\n"));
+        }
+
+        private void MergeLines()
+        {
+            fragmentCode = string.Join("\n", fragmentCodeLines);
         }
 
         public void Update(float deltaTime)
@@ -184,17 +350,35 @@ void main()
 
         public void SetError(string error)
         {
-            errorMessage = error;
+            if (error == previousError) return;
+            errorMessages.Clear();
+            if (error != null)
+            {
+                errorMessages.AddRange(Regex.Split(
+                    error.Replace("Compilation failed: ", "")
+                        .Replace("<veldrid-spirv-input>:", ""),
+                    "\r\n|\r|\n"));
+            }
+            previousError = error;
         }
 
         public void Apply()
         {
+            if (basicMode)
+            {
+                SplitLines();
+            }
+            else
+            {
+                MergeLines();
+            }
             Controller.Context.CreateDynamicResources(fragmentCode);
         }
 
         public void LoadShader(string shaderContent)
         {
             fragmentCode = shaderContent;
+            SplitLines();
             Apply();
         }
     }
