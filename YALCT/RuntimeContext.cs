@@ -349,9 +349,7 @@ void main()
 {
     gl_Position = vec4(Position, 1);
 }";
-        private const string fragmentHeaderCode = @"
-#version 450
-
+        private const string fragmentHeaderCode = @"#version 450
 layout(set = 0, binding = 0) uniform RuntimeData
 {
     vec4 mouse;
@@ -360,8 +358,6 @@ layout(set = 0, binding = 0) uniform RuntimeData
     float deltaTime;
     int frame;
 };
-
 layout(location = 0) out vec4 out_Color;";
-
     }
 }
