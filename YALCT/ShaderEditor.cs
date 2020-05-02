@@ -157,19 +157,16 @@ void main()
             {
                 ImGui.PushFont(Controller.EditorFont);
                 Vector2 editorWindowSize = ImGui.GetWindowSize();
-                float bottomMargin = 40;
                 // TODO get rid of this crap right here
                 if (errorMessage != null)
                 {
                     ImGui.PushTextWrapPos();
                     ImGui.TextColored(RgbaFloat.Red.ToVector4(), errorMessage);
                     ImGui.PopTextWrapPos();
-                    Vector2 errorSize = ImGui.GetItemRectSize();
-                    bottomMargin = errorSize.Y * 2f + 15f; // sshh no tears
                 }
-                float lineWidth = editorWindowSize.X - 65;
                 if (ImGui.BeginChild("editor", Vector2.Zero, true))
                 {
+                    // handle basic input
                     if (editorSelectedLineIndex != -1)
                     {
                         if ((editorSelectedLineCursorPosition == 0 && ImGui.IsKeyPressed(ImGui.GetKeyIndex(ImGuiKey.LeftArrow), false))
@@ -206,6 +203,8 @@ void main()
                             }
                         }
                     }
+
+                    // draw lines
                     for (int i = 0; i < fragmentCodeLines.Count; i++)
                     {
                         string line = fragmentCodeLines[i];
