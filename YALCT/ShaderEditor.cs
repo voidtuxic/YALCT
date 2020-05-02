@@ -209,8 +209,7 @@ void main()
                     for (int i = 0; i < fragmentCodeLines.Count; i++)
                     {
                         string line = fragmentCodeLines[i];
-                        // TODO get line offset in a less dirty way
-                        string lineNumber = $"{i + 10}";
+                        string lineNumber = $"{i + Controller.Context.FragmentHeaderLineCount}";
                         bool isEdited = i == editorSelectedLineIndex;
                         ImGui.TextColored(isEdited ? RgbaFloat.Green.ToVector4() : RgbaFloat.LightGrey.ToVector4(), lineNumber);
                         ImGui.SameLine(50);
