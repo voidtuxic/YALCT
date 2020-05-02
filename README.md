@@ -88,7 +88,6 @@ As you can guess, MacOS doesn't get a choice.
 
 Contributions are welcome, feel free to fork and open PRs. Here are some features that I wish to implement in the future:
 
-- add fullscreen mode, just forgot about this one
 - a way better code editor
 - input textures
 - input audio

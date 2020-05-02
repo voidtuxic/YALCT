@@ -11,8 +11,8 @@ namespace YALCT
 {
     public class RuntimeContext : IDisposable
     {
-        Sdl2Window window;
-        bool windowResized = false;
+        private Sdl2Window window;
+        private bool windowResized = false;
 
         private GraphicsBackend backend;
         private bool isInitialized;
@@ -43,6 +43,7 @@ namespace YALCT
         public GraphicsDevice GraphicsDevice => graphicsDevice;
         public int Width => window.Width;
         public int Height => window.Height;
+        public Sdl2Window Window => window;
 
         public RuntimeContext(GraphicsBackend backend)
         {
@@ -56,7 +57,11 @@ namespace YALCT
             // SDL init
             WindowCreateInfo windowCI = new WindowCreateInfo()
             {
+#if DEBUG
                 WindowInitialState = WindowState.Maximized,
+#else
+                WindowInitialState = WindowState.BorderlessFullScreen,
+#endif
                 WindowTitle = $"Yet Another Live Coding Tool ({backend})",
                 WindowWidth = 200,
                 WindowHeight = 200

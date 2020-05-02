@@ -21,6 +21,11 @@ namespace YALCT
         private readonly Dictionary<UIState, IImGuiComponent> components = new Dictionary<UIState, IImGuiComponent>();
 
         private bool showOptions = false;
+#if DEBUG
+        private bool fullscreen = false;
+#else
+        private bool fullscreen = true;
+#endif
         private float uiAlpha = 0.5f;
 
         public RuntimeContext Context => context;
@@ -119,6 +124,10 @@ namespace YALCT
             ImGui.SetNextWindowSize(new Vector2(OPTIONSWIDTH, OPTIONSHEIGHT));
             if (ImGui.Begin("Options", ref showOptions, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
             {
+                if (ImGui.Checkbox("Fullscreen", ref fullscreen))
+                {
+                    Context.Window.WindowState = fullscreen ? WindowState.BorderlessFullScreen : WindowState.Maximized;
+                }
                 ImGui.Text("UI Opacity");
                 ImGui.SetNextItemWidth(OPTIONSHEIGHT - 15);
                 if (ImGui.SliderFloat("", ref uiAlpha, 0.2f, 1))
