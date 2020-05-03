@@ -25,4 +25,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: YALCT-ubuntu
-        path: YALCT/YALCT/bin/Release/netcoreapp3.1/
+        path: YALCT/bin/Release/netcoreapp3.1/
