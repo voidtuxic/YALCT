@@ -19,9 +19,9 @@ namespace YALCT
         public float deltaTime;
         public int frame;
 
-        public void Update(Sdl2Window window, InputSnapshot input, float newDeltaTime)
+        public void Update(Sdl2Window window, InputSnapshot input, float newDeltaTime, bool invertMouseY)
         {
-            mouse = new Vector4(input.MousePosition,
+            mouse = new Vector4(invertMouseY ? input.MousePosition : new Vector2(input.MousePosition.X, window.Height - input.MousePosition.Y),
                                 input.IsMouseDown(MouseButton.Left) ? 1 : 0,
                                 input.IsMouseDown(MouseButton.Right) ? 1 : 0);
             resolution = new Vector2(window.Width, window.Height);
