@@ -88,7 +88,7 @@ namespace YALCT
             // Veldrid init
             GraphicsDeviceOptions options = new GraphicsDeviceOptions(
                 debug: false,
-                swapchainDepthFormat: PixelFormat.R32_Float,
+                swapchainDepthFormat: PixelFormat.R16_UNorm,
                 syncToVerticalBlank: true,
                 resourceBindingModel: ResourceBindingModel.Improved,
                 preferDepthRangeZeroToOne: true,
