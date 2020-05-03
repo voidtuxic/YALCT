@@ -26,6 +26,7 @@ namespace YALCT
 #else
         private bool fullscreen = true;
 #endif
+        private bool vsync = true;
         private float uiAlpha = 0.75f;
 
         public RuntimeContext Context => context;
@@ -127,6 +128,10 @@ namespace YALCT
                 if (ImGui.Checkbox("Fullscreen", ref fullscreen))
                 {
                     Context.Window.WindowState = fullscreen ? WindowState.BorderlessFullScreen : WindowState.Maximized;
+                }
+                if (ImGui.Checkbox("VSync", ref vsync))
+                {
+                    Context.GraphicsDevice.SyncToVerticalBlank = vsync;
                 }
                 ImGui.Text("UI Opacity");
                 ImGui.SetNextItemWidth(OPTIONSHEIGHT - 15);
