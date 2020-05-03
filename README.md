@@ -89,7 +89,6 @@ As you can guess, MacOS doesn't get a choice.
 
 ## Known issues
 
-- OpenGL switches y coordinates compared to the other APIs so things will be vertically switched
 - Vulkan doesn't like some shaders and can freeze the app on load
 
 ## Roadmap and contribution
@@ -97,6 +96,7 @@ As you can guess, MacOS doesn't get a choice.
 Contributions are welcome, feel free to fork and open PRs. Here are some features that I wish to implement in the future:
 
 - editor with syntax highlight? Might be hard in the current state
+- actual working CI ? Github actions artifacts produce bugged executables
 - input textures
 - input audio
 - more exotic inputs : game controllers, midi, OSC, why not some interaction with [OSSIA Score](https://ossia.io/)
