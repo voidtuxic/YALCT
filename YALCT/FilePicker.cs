@@ -60,7 +60,7 @@ namespace YALCT
 
         private string RemoveItemPathMarkup(string item)
         {
-            return item.Replace(path, "").Replace(@"\", "");
+            return item.Replace(path, "").Replace(@"\", "").Replace(@"/", "");
         }
 
         private void SetPath(string newPath)
