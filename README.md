@@ -12,6 +12,22 @@ Credits in this hectic gif:
 - ["Protean Clouds" by nimitz](https://www.shadertoy.com/view/3l23Rh)
 - ["[TWITCH] Isometric Cages" by Flopine](https://www.shadertoy.com/view/WdXfW7)
 
+## Table of content
+
+- [Features](#features)
+- [Usage](#usage)
+  - [Download release](#download-release)
+  - [Making shaders](#making-shaders)
+  - [Shader parameters](#shader-parameters)
+  - [API Support](#api-support)
+  - [Running different graphics APIs](#running-different-graphics-apis)
+  - [Building](#building)
+  - [Publishing releases](#publishing-releases)
+- [Known issues](#known-issues)
+- [Roadmap and contribution](#roadmap-and-contribution)
+- [License](#license)
+- [Credits](#credits)
+
 ## Features
 
 - full GLSL v450 fragment shader support
@@ -24,21 +40,18 @@ Credits in this hectic gif:
 
 ### Download release
 
-Requires [.Net Core 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) runtime for running. Extract files to whatever folder you wish and launch YALCT executable through your file explorer or via CLI [for backend switching](#running-different-graphics-apis).
+Self-contained releases are provided for the following systems :
 
-Currently only the Windows prebuilt version are available, check out [the latest release page](https://github.com/Calebsem/YALCT/releases/latest) to download it. CI building and other platforms are in the works.
+- Windows 64bit : Minimum OS version is Windows 7
+- Linux 64bit : Most desktop distributions like CentOS, Debian, Fedora, Ubuntu, and derivatives
+- MacOS 64bit : Minimum OS version is macOS 10.12 Sierra
 
-### Building
+Check out [the latest release page](https://github.com/Calebsem/YALCT/releases/latest) to download it. CI building and other platforms are in the works.
 
-**This repository uses git lfs.**
+Builds are self-contained and don't require the .Net Core runtime to be installed. Extract files to whatever folder you wish and launch YALCT executable through your file explorer or via CLI [for backend switching](#running-different-graphics-apis).
 
-Requires [.Net Core 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) SDK for building. Nothing particular about the building process, just go inside the project folder and build/run/publish it how you wish.
+MacOS will require you to allow the app in your system preferences to able to launch directly from the finder. Unless you have a nice graphics card on your mac, don't expect wonderful performances.
 
-Quickstart :
-```
-cd YALCT
-dotnet run -c Release
-```
 ### Making shaders
 
 Wether you create or load a shader, the entry point is the `main()` function. Regarding the rest, you are free to declare as many functions as you need, the entire Vulkan flavor GLSL specs should be supported.
@@ -56,24 +69,24 @@ void main()
 
 ### Shader parameters
 
-| Name | Type | Description |
-| --- | --- | --- |
-| `mouse` | `vec4` | `xy` for mouse, `z` for mouse 1 click, `w` for mouse 2 click |
-| `resolution` | `vec2` | screen resolution in pixels |
-| `time` | `float` | global time in seconds |
-| `deltaTime` | `float` | time since last frame in seconds |
-| `frame` | `int` | frame number |
+| Name         | Type    | Description                                                  |
+| ------------ | ------- | ------------------------------------------------------------ |
+| `mouse`      | `vec4`  | `xy` for mouse, `z` for mouse 1 click, `w` for mouse 2 click |
+| `resolution` | `vec2`  | screen resolution in pixels                                  |
+| `time`       | `float` | global time in seconds                                       |
+| `deltaTime`  | `float` | time since last frame in seconds                             |
+| `frame`      | `int`   | frame number                                                 |
 
 ### API Support
 
 This has mostly been tested on Windows 10, but it does run on MacOS High Sierra and Ubuntu 19.10 in Virtualbox. Some more testing is required.
 
-| API | Windows | Linux | MacOS |
-|---|---|---|---|
-| OpenGL (default) |:white_check_mark:|:white_check_mark:| (deprecated) |
-| Vulkan|:white_check_mark:|:white_check_mark:| |
-| Direct3D11 |:white_check_mark: | | |
-| Metal| | | :white_check_mark:|
+| API                   | Windows            | Linux              | MacOS              |
+| --------------------- | ------------------ | ------------------ | ------------------ |
+| OpenGL 3.0+ (default) | :white_check_mark: | :white_check_mark: | (deprecated)       |
+| Vulkan                | :white_check_mark: | :white_check_mark: |                    |
+| Direct3D11            | :white_check_mark: |                    |                    |
+| Metal                 |                    |                    | :white_check_mark: |
 
 ### Running different graphics APIs
 
@@ -86,6 +99,28 @@ YALCT direct3d11
 ```
 
 As you can guess, MacOS doesn't get a choice.
+
+### Building
+
+**This repository uses git lfs.**
+
+Requires [.Net Core 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) SDK for building. Nothing particular about the building process, just go inside the project folder and build/run/publish it how you wish.
+
+Quickstart :
+```
+cd YALCT
+dotnet run -c Release
+```
+
+### Publishing releases
+
+Windows only for now. A powershell script is provided to build all supported x64 platforms in self-contained zip files. You still need the .Net Core SDK as specified in [Building](#building). You also need a globally installed [7-zip](https://www.7-zip.org/download.html) because the default Windows compression util breaks folder hierarchy on unix systems.
+
+```
+.\publish-all.ps1
+```
+
+You will find all the zip archives in the `build/` folder.
 
 ## Known issues
 
