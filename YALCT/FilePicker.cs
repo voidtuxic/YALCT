@@ -175,7 +175,7 @@ namespace YALCT
         {
             if (item.IsUpper)
             {
-                SetPath(Path.Combine(path, @"..\"));
+                SetPath(Path.Combine(path, @"../"));
                 return;
             }
             string itemPath = Path.Combine(path, item.Name);
