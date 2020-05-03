@@ -10,7 +10,7 @@ namespace YALCT
     public class ImGuiController
     {
         private const int OPTIONSWIDTH = 150;
-        private const int OPTIONSHEIGHT = 150;
+        private const int OPTIONSHEIGHT = 170;
 
         private readonly RuntimeContext context;
         private readonly ImFontPtr mainFont;
@@ -26,12 +26,15 @@ namespace YALCT
 #else
         private bool fullscreen = true;
 #endif
+        private bool vsync = true;
+        private bool invertMouseY = false;
         private float uiAlpha = 0.75f;
 
         public RuntimeContext Context => context;
         public ImFontPtr MainFont => mainFont;
         public ImFontPtr EditorFont => editorFont;
         public bool ShowOptions { get => showOptions; set => showOptions = value; }
+        public bool InvertMouseY => invertMouseY;
         public float UiAlpha { get => uiAlpha; set => uiAlpha = value; }
         public UIState State => state;
 
@@ -128,6 +131,11 @@ namespace YALCT
                 {
                     Context.Window.WindowState = fullscreen ? WindowState.BorderlessFullScreen : WindowState.Maximized;
                 }
+                if (ImGui.Checkbox("VSync", ref vsync))
+                {
+                    Context.GraphicsDevice.SyncToVerticalBlank = vsync;
+                }
+                ImGui.Checkbox("Invert Mouse Y", ref invertMouseY);
                 ImGui.Text("UI Opacity");
                 ImGui.SetNextItemWidth(OPTIONSHEIGHT - 15);
                 if (ImGui.SliderFloat("", ref uiAlpha, 0.2f, 1))

@@ -89,7 +89,7 @@ namespace YALCT
             GraphicsDeviceOptions options = new GraphicsDeviceOptions(
                 debug: false,
                 swapchainDepthFormat: PixelFormat.R32_Float,
-                syncToVerticalBlank: false,
+                syncToVerticalBlank: true,
                 resourceBindingModel: ResourceBindingModel.Improved,
                 preferDepthRangeZeroToOne: true,
                 preferStandardClipSpaceYDirection: true);
@@ -144,7 +144,11 @@ namespace YALCT
         public void CreateDynamicResources(string fragmentCode)
         {
             // shaders
-            string newFragmentShader = fragmentHeaderCode + fragmentCode;
+            string newFragmentShader;
+            if (backend == GraphicsBackend.OpenGL)
+                newFragmentShader = fragmentHeaderCode + fragmentCode;
+            else
+                newFragmentShader = fragmentHeaderCode + fragmentHeaderNonGLCode + fragmentCode;
             if (currentFragmentShader != null && currentFragmentShader.Equals(newFragmentShader))
             {
                 uiController.SetError(null);
@@ -261,7 +265,7 @@ namespace YALCT
         private void Update(float deltaTime)
         {
             InputSnapshot inputSnapshot = window.PumpEvents();
-            runtimeData.Update(window, inputSnapshot, deltaTime);
+            runtimeData.Update(window, inputSnapshot, deltaTime, uiController.InvertMouseY);
 
             imGuiRenderer.Update(deltaTime, inputSnapshot);
             SubmitImGui(deltaTime, inputSnapshot);
@@ -372,5 +376,10 @@ layout(set = 0, binding = 0) uniform RuntimeData
     int frame;
 };
 layout(location = 0) out vec4 out_Color;";
+
+        // considering shadertoy is truth on this
+        public const string fragmentHeaderNonGLCode = @"
+#define gl_FragCoord vec4(gl_FragCoord.x, resolution.y - gl_FragCoord.y, gl_FragCoord.zw)
+";
     }
 }

@@ -60,7 +60,7 @@ namespace YALCT
 
         private string RemoveItemPathMarkup(string item)
         {
-            return item.Replace(path, "").Replace(@"\", "");
+            return item.Replace(path, "").Replace(@"\", "").Replace(@"/", "");
         }
 
         private void SetPath(string newPath)
@@ -175,7 +175,7 @@ namespace YALCT
         {
             if (item.IsUpper)
             {
-                SetPath(Path.Combine(path, @"..\"));
+                SetPath(Path.Combine(path, @"../"));
                 return;
             }
             string itemPath = Path.Combine(path, item.Name);
