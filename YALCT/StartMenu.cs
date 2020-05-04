@@ -27,12 +27,13 @@ namespace YALCT
         public void SubmitUI(float deltaTime, InputSnapshot inputSnapshot)
         {
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
-            ImGui.SetNextWindowSize(new Vector2(MENUWIDTH, MENUHEIGHT));
-            ImGui.SetNextWindowPos(new Vector2(Controller.Context.Width / 2 - MENUWIDTH / 2,
-                                               Controller.Context.Height / 2 - MENUHEIGHT / 2));
+            Vector2 size = RuntimeOptions.Current.GetScaledSize(MENUWIDTH, MENUHEIGHT);
+            ImGui.SetNextWindowSize(size);
+            ImGui.SetNextWindowPos(new Vector2(Controller.Context.Width / 2 - size.X / 2,
+                                               Controller.Context.Height / 2 - size.Y / 2));
             if (ImGui.Begin("Yet Another Live Coding Tool", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
             {
-                Vector2 buttonSize = new Vector2(MENUWIDTH - 16, 40);
+                Vector2 buttonSize = new Vector2(size.X - 16, 40 * RuntimeOptions.Current.UiScale);
                 if (ImGui.Button("Create", buttonSize))
                 {
                     Controller.SetState(UIState.Editor);

@@ -11,35 +11,20 @@ namespace YALCT
     {
 
         private readonly RuntimeContext context;
-        private readonly ImFontPtr mainFont;
-        private readonly ImFontPtr editorFont;
 
         private UIState previousState;
         private UIState state;
         private readonly Dictionary<UIState, IImGuiComponent> components = new Dictionary<UIState, IImGuiComponent>();
 
         public RuntimeContext Context => context;
-        public ImFontPtr MainFont => mainFont;
-        public ImFontPtr EditorFont => editorFont;
         public UIState State => state;
 
         public ImGuiController(RuntimeContext context)
         {
             this.context = context;
 
-            // font setup
-            ImGui.EndFrame();
-            var io = ImGui.GetIO();
-            io.Fonts.Clear();
-            mainFont = io.Fonts.AddFontFromFileTTF(Path.Combine(Directory.GetCurrentDirectory(), "fonts/OpenSans-Regular.ttf"), 16.0f);
-            editorFont = io.Fonts.AddFontFromFileTTF(Path.Combine(Directory.GetCurrentDirectory(), "fonts/FiraCode-Regular.ttf"), 16.0f);
-            context.GraphicsDevice.WaitForIdle();
-            context.ImGuiRenderer.RecreateFontDeviceTexture();
-            ImGui.NewFrame();
-
-            // style and options setup
-            ImGui.StyleColorsDark();
-            RuntimeOptions.Current.Apply(context);
+            // options setup
+            RuntimeOptions.Current.Initialize(context);
 
             // component setup
             components.Add(UIState.StartMenu, new StartMenu(this));
