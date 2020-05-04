@@ -47,7 +47,7 @@ namespace YALCT
                 }
                 if (ImGui.Button("Options", buttonSize))
                 {
-                    Controller.ShowOptions = true;
+                    RuntimeOptions.Current.ShowOptions = true;
                 }
                 if (ImGui.Button("Quit", buttonSize))
                 {

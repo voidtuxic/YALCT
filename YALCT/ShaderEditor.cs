@@ -83,7 +83,7 @@ void main()
                 {
                     if (keyEvent.Down && keyEvent.Key == Key.Space)
                     {
-                        ImGui.GetStyle().Alpha = Controller.UiAlpha;
+                        ImGui.GetStyle().Alpha = RuntimeOptions.Current.UiAlpha;
                         showUI = true;
                         break;
                     }
@@ -121,7 +121,7 @@ void main()
                     }
                     if (ImGui.MenuItem("Options"))
                     {
-                        Controller.ShowOptions = true;
+                        RuntimeOptions.Current.ShowOptions = true;
                     }
                     if (ImGui.MenuItem("Quit"))
                     {
