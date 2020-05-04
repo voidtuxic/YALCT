@@ -265,7 +265,7 @@ namespace YALCT
         private void Update(float deltaTime)
         {
             InputSnapshot inputSnapshot = window.PumpEvents();
-            runtimeData.Update(window, inputSnapshot, deltaTime, uiController.InvertMouseY);
+            runtimeData.Update(window, inputSnapshot, deltaTime);
 
             imGuiRenderer.Update(deltaTime, inputSnapshot);
             SubmitImGui(deltaTime, inputSnapshot);

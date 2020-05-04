@@ -63,7 +63,6 @@ void main()
 
         public void SubmitUI(float deltaTime, InputSnapshot inputSnapshot)
         {
-            ImGui.PushFont(Controller.MainFont);
             if (showUI)
             {
                 SubmitMainMenu(deltaTime);
@@ -83,13 +82,12 @@ void main()
                 {
                     if (keyEvent.Down && keyEvent.Key == Key.Space)
                     {
-                        ImGui.GetStyle().Alpha = Controller.UiAlpha;
+                        ImGui.GetStyle().Alpha = RuntimeOptions.Current.UiAlpha;
                         showUI = true;
                         break;
                     }
                 }
             }
-            ImGui.PopFont();
         }
 
         private void SubmitMainMenu(float deltaTime)
@@ -121,7 +119,7 @@ void main()
                     }
                     if (ImGui.MenuItem("Options"))
                     {
-                        Controller.ShowOptions = true;
+                        RuntimeOptions.Current.ShowOptions = true;
                     }
                     if (ImGui.MenuItem("Quit"))
                     {
@@ -162,10 +160,10 @@ void main()
         private unsafe void SubmitEditorWindow()
         {
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
-            ImGui.SetNextWindowSizeConstraints(Vector2.One * 500, Vector2.One * Controller.Context.Width);
+            ImGui.SetNextWindowSizeConstraints(Vector2.One * 500 * RuntimeOptions.Current.UiScale, Vector2.One * Controller.Context.Width);
             if (ImGui.Begin("Shader Editor"))
             {
-                ImGui.PushFont(Controller.EditorFont);
+                ImGui.PushFont(RuntimeOptions.Current.EditorFont);
                 if (ImGui.BeginTabBar("editor mode"))
                 {
                     if (ImGui.BeginTabItem("Advanced"))

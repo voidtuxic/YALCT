@@ -167,7 +167,7 @@ namespace YALCT
                 ImGui.BeginTooltip();
                 ImGui.TextColored(RgbaFloat.Red.ToVector4(), errorMessage);
                 ImGui.EndTooltip();
-                ImGui.GetStyle().Alpha = Controller.UiAlpha;
+                ImGui.GetStyle().Alpha = RuntimeOptions.Current.UiAlpha;
             }
         }
 
