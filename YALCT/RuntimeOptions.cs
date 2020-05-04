@@ -149,7 +149,7 @@ namespace YALCT
 
         private void SetFullscreen(RuntimeContext context, bool save = false)
         {
-            context.Window.WindowState = fullscreen ? WindowState.BorderlessFullScreen : WindowState.Maximized;
+            context.Window.WindowState = fullscreen ? WindowState.BorderlessFullScreen : WindowState.Normal;
             if (save)
                 SaveOptions();
         }
