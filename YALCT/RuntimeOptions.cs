@@ -1,5 +1,9 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Numerics;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using ImGuiNET;
 using Veldrid;
 
@@ -15,6 +19,9 @@ namespace YALCT
         private const int OPTIONSWIDTH = 150;
         private const int OPTIONSHEIGHT = 220;
         private const float FONTSIZE = 16.0f;
+
+        private readonly string optionsFilePath = Path.Combine(Directory.GetCurrentDirectory(), "options.ini");
+
         private ImFontPtr mainFont;
         private ImFontPtr editorFont;
 
@@ -28,6 +35,8 @@ namespace YALCT
         private bool invertMouseY = false;
         private float uiAlpha = 0.75f;
         private float uiScale = 1f;
+
+        private CancellationTokenSource saveCancellationTokenSource;
 
         public ImFontPtr MainFont => mainFont;
         public ImFontPtr EditorFont => editorFont;
@@ -44,7 +53,7 @@ namespace YALCT
 
         public void Initialize(RuntimeContext context)
         {
-            // TODO load and save options
+            LoadOptions();
             BuildFonts(context);
             Apply(context);
         }
@@ -92,11 +101,11 @@ namespace YALCT
             {
                 if (ImGui.Checkbox("Fullscreen", ref fullscreen))
                 {
-                    SetFullscreen(context);
+                    SetFullscreen(context, true);
                 }
                 if (ImGui.Checkbox("VSync", ref vsync))
                 {
-                    SetVSync(context);
+                    SetVSync(context, true);
                 }
                 ImGui.Checkbox("Invert Mouse Y", ref invertMouseY);
                 ImGui.Text("UI Scale");
@@ -106,40 +115,134 @@ namespace YALCT
                 {
                     if (uiScale < 1f) uiScale = 1f;
                     if (uiScale > 4f) uiScale = 4f;
-                    SetUIScale(context);
+                    SetUIScale(context, true);
                     return;
                 }
                 ImGui.Text("UI Opacity");
                 ImGui.SetNextItemWidth(itemWidth);
                 if (ImGui.SliderFloat("uiopacity", ref uiAlpha, 0.2f, 1f))
                 {
-                    SetOpacity();
+                    SetOpacity(true);
                 }
             }
             ImGui.PopStyleVar();
         }
 
-        private void SetOpacity()
+        private void SetOpacity(bool save = false)
         {
             ImGui.GetStyle().Alpha = uiAlpha;
+            if (save)
+                SaveOptions();
         }
 
-        private void SetUIScale(RuntimeContext context)
+        private void SetUIScale(RuntimeContext context, bool save = false)
         {
             BuildFonts(context);
-            // ImGui.StyleColorsDark();
-            // ImGui.GetIO().FontGlobalScale = uiScale;
-            // ImGui.GetStyle().ScaleAllSizes(uiScale);
+            if (save)
+                SaveOptions();
         }
 
-        private void SetVSync(RuntimeContext context)
+        private void SetVSync(RuntimeContext context, bool save = false)
         {
             context.GraphicsDevice.SyncToVerticalBlank = vsync;
+            if (save)
+                SaveOptions();
         }
 
-        private void SetFullscreen(RuntimeContext context)
+        private void SetFullscreen(RuntimeContext context, bool save = false)
         {
             context.Window.WindowState = fullscreen ? WindowState.BorderlessFullScreen : WindowState.Maximized;
+            if (save)
+                SaveOptions();
+        }
+
+        private string GenerateOptionsFileContent()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"fullscreen={fullscreen}");
+            builder.AppendLine($"vsync={vsync}");
+            builder.AppendLine($"invertMouseY={invertMouseY}");
+            builder.AppendLine($"uiScale={uiScale}");
+            builder.AppendLine($"uiAlpha={uiAlpha}");
+            return builder.ToString();
+        }
+
+        private void LoadOptions()
+        {
+            if (!File.Exists(optionsFilePath))
+            {
+                // Save defaults
+                SaveOptionsSync();
+            }
+
+            string[] options = File.ReadAllLines(optionsFilePath);
+
+            foreach (string option in options)
+            {
+                string[] components = option.Split('=');
+                if (components.Length != 2) continue;
+                switch (components[0])
+                {
+                    case "fullscreen":
+                        fullscreen = bool.Parse(components[1]);
+                        break;
+                    case "vsync":
+                        vsync = bool.Parse(components[1]);
+                        break;
+                    case "invertMouseY":
+                        invertMouseY = bool.Parse(components[1]);
+                        break;
+                    case "uiScale":
+                        uiScale = float.Parse(components[1]);
+                        break;
+                    case "uiAlpha":
+                        uiAlpha = float.Parse(components[1]);
+                        break;
+                }
+            }
+        }
+
+        // poor man's debounce
+        private void SaveOptions()
+        {
+            SaveOptionsSync();
+            // if (saveCancellationTokenSource != null) saveCancellationTokenSource.Cancel();
+            // saveCancellationTokenSource = new CancellationTokenSource();
+            // CancellationToken ct = saveCancellationTokenSource.Token;
+            // var task = Task.Run(async () =>
+            // {
+            //     for (int i = 0; i < 200; i++)
+            //     {
+            //         if (ct.IsCancellationRequested)
+            //         {
+            //             ct.ThrowIfCancellationRequested();
+            //         }
+            //         await Task.Delay(5);
+            //     }
+            //     SaveOptionsSync();
+            // }, saveCancellationTokenSource.Token);
+
+            // try
+            // {
+            //     await task;
+            // }
+            // catch (OperationCanceledException e)
+            // {
+            //     Console.WriteLine($"{nameof(OperationCanceledException)} thrown with message: {e.Message}");
+            // }
+            // finally
+            // {
+            //     if (saveCancellationTokenSource != null)
+            //     {
+            //         saveCancellationTokenSource.Dispose();
+            //         saveCancellationTokenSource = null;
+            //     }
+            // }
+        }
+
+        private void SaveOptionsSync()
+        {
+            File.WriteAllText(optionsFilePath, GenerateOptionsFileContent());
         }
     }
 }
