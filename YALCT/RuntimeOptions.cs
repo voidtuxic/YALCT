@@ -36,8 +36,6 @@ namespace YALCT
         private float uiAlpha = 0.75f;
         private float uiScale = 1f;
 
-        private CancellationTokenSource saveCancellationTokenSource;
-
         public ImFontPtr MainFont => mainFont;
         public ImFontPtr EditorFont => editorFont;
 
@@ -172,7 +170,7 @@ namespace YALCT
             if (!File.Exists(optionsFilePath))
             {
                 // Save defaults
-                SaveOptionsSync();
+                SaveOptions();
             }
 
             string[] options = File.ReadAllLines(optionsFilePath);
@@ -202,45 +200,7 @@ namespace YALCT
             }
         }
 
-        // poor man's debounce
         private void SaveOptions()
-        {
-            SaveOptionsSync();
-            // if (saveCancellationTokenSource != null) saveCancellationTokenSource.Cancel();
-            // saveCancellationTokenSource = new CancellationTokenSource();
-            // CancellationToken ct = saveCancellationTokenSource.Token;
-            // var task = Task.Run(async () =>
-            // {
-            //     for (int i = 0; i < 200; i++)
-            //     {
-            //         if (ct.IsCancellationRequested)
-            //         {
-            //             ct.ThrowIfCancellationRequested();
-            //         }
-            //         await Task.Delay(5);
-            //     }
-            //     SaveOptionsSync();
-            // }, saveCancellationTokenSource.Token);
-
-            // try
-            // {
-            //     await task;
-            // }
-            // catch (OperationCanceledException e)
-            // {
-            //     Console.WriteLine($"{nameof(OperationCanceledException)} thrown with message: {e.Message}");
-            // }
-            // finally
-            // {
-            //     if (saveCancellationTokenSource != null)
-            //     {
-            //         saveCancellationTokenSource.Dispose();
-            //         saveCancellationTokenSource = null;
-            //     }
-            // }
-        }
-
-        private void SaveOptionsSync()
         {
             File.WriteAllText(optionsFilePath, GenerateOptionsFileContent());
         }
