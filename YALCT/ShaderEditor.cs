@@ -15,6 +15,8 @@ namespace YALCT
         private const float AUTOAPPLYINTERVAL = 1f;
         private const float FPSUPDATEINTERVAL = 0.25f;
         private const float HIDEUIHELPTEXTDURATION = 5f;
+        private const float RESOURCESWINDOWWIDTH = 300f;
+        private const float RESOURCESWINDOWHEIGHT = 600f;
 
         private bool showUI = true;
         private float hideUIHelpTextDelta = 0;
@@ -67,6 +69,7 @@ void main()
             {
                 SubmitMainMenu(deltaTime);
                 SubmitEditorWindow();
+                SubmitResourcesWindow();
             }
             else
             {
@@ -88,6 +91,43 @@ void main()
                     }
                 }
             }
+        }
+
+        private void SubmitResourcesWindow()
+        {
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
+            Vector2 size = RuntimeOptions.Current.GetScaledSize(RESOURCESWINDOWWIDTH, RESOURCESWINDOWHEIGHT);
+            float quarterWidth = size.X / 4;
+            ImGui.SetNextWindowSize(size);
+            if (ImGui.Begin("Resources", ImGuiWindowFlags.NoResize))
+            {
+                if (ImGui.Button("Add resource", new Vector2(size.X - 16, 30 * RuntimeOptions.Current.UiScale)))
+                {
+                    Controller.LoadResource();
+                }
+                ImGui.PushFont(RuntimeOptions.Current.EditorFont);
+                if (ImGui.BeginChild("Resource list", Vector2.Zero, false))
+                {
+                    foreach (YALCTShaderResource resource in Controller.Context.ImguiTextures)
+                    {
+                        if (ImGui.BeginChild($"resprops_{resource.UID}", new Vector2(0, quarterWidth), false))
+                        {
+                            ImGui.Image(resource.ImguiBinding, new Vector2(quarterWidth, quarterWidth));
+                            ImGui.SameLine(quarterWidth + 5);
+                            if (ImGui.BeginChild($"resdata_{resource.UID}", new Vector2(0, quarterWidth), false))
+                            {
+                                ImGui.Text(resource.Name);
+                                ImGui.Text($"{resource.Size.X}x{resource.Size.Y}");
+                                ImGui.EndChild();
+                            }
+                            ImGui.EndChild();
+                        }
+                    }
+                    ImGui.EndChild();
+                }
+                ImGui.PopFont();
+            }
+            ImGui.PopStyleVar();
         }
 
         private void SubmitMainMenu(float deltaTime)

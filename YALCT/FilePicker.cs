@@ -15,28 +15,15 @@ namespace YALCT
         private const int MAXPATHLENGTH = 1000; // still some shitty stuff right here
         private const float ERRORMESSAGEDURATION = 5f;
 
-        internal struct FilePickerItem
-        {
-            public bool IsUpper;
-            public bool IsFolder;
-            public string Name;
-
-            public FilePickerItem(bool isFolder, string name, bool isUpper = false)
-            {
-                IsUpper = isUpper;
-                IsFolder = isFolder;
-                Name = name;
-            }
-        }
-
         private bool open = true;
         private bool showAll = false;
         private bool saveMode = false;
         private bool shadertoyMode = false;
+        private bool resourceMode = false;
         private string path;
         private string filename = "shader.glsl";
-        private readonly FilePickerItem upperItem = new FilePickerItem(true, "..", true);
-        private readonly List<FilePickerItem> files = new List<FilePickerItem>();
+        private readonly YALCTFilePickerItem upperItem = new YALCTFilePickerItem(true, "..", "that ain't it chief", true);
+        private readonly List<YALCTFilePickerItem> files = new List<YALCTFilePickerItem>();
 
         private string errorMessage;
         private float errorMessageTime;
@@ -44,6 +31,7 @@ namespace YALCT
         public ImGuiController Controller { get; private set; }
         public bool SaveMode { get => saveMode; set => saveMode = value; }
         public bool ShadertoyMode { get => shadertoyMode; set => shadertoyMode = value; }
+        public bool ResourceMode { get => resourceMode; set => resourceMode = value; }
 
         public FilePicker(ImGuiController controller)
         {
@@ -77,7 +65,7 @@ namespace YALCT
             string[] currentFolders = Directory.GetDirectories(path);
             foreach (string folder in currentFolders)
             {
-                files.Add(new FilePickerItem(true, $"{RemoveItemPathMarkup(folder)}/"));
+                files.Add(new YALCTFilePickerItem(true, $"{RemoveItemPathMarkup(folder)}/", Path.Combine(path, folder)));
             }
 
             if (!saveMode)
@@ -85,8 +73,9 @@ namespace YALCT
                 string[] currentFiles = Directory.GetFiles(path);
                 foreach (string file in currentFiles)
                 {
-                    if (!showAll && FilePickerHelper.IsIgnoredExtension(file)) continue;
-                    files.Add(new FilePickerItem(false, RemoveItemPathMarkup(file)));
+                    if (!resourceMode && !showAll && FilePickerHelper.IsIgnoredExtension(file)) continue;
+                    if (resourceMode && !FilePickerHelper.IsResourceExtension(file)) continue;
+                    files.Add(new YALCTFilePickerItem(false, RemoveItemPathMarkup(file), Path.Combine(path, file)));
                 }
             }
         }
@@ -115,7 +104,7 @@ namespace YALCT
                         SetPath(tmpPath);
                     }
                 }
-                if (!saveMode)
+                if (!saveMode && !resourceMode)
                 {
                     if (ImGui.Checkbox("Show all", ref showAll))
                     {
@@ -149,7 +138,7 @@ namespace YALCT
                 {
                     for (int i = 0; i < files.Count; i++)
                     {
-                        FilePickerItem item = files[i];
+                        YALCTFilePickerItem item = files[i];
                         if (ImGui.Selectable(item.Name))
                         {
                             HandleSelection(item);
@@ -171,26 +160,47 @@ namespace YALCT
             }
         }
 
-        private void HandleSelection(FilePickerItem item)
+        private void HandleSelection(YALCTFilePickerItem item)
         {
             if (item.IsUpper)
             {
                 SetPath(Path.Combine(path, @"../"));
                 return;
             }
-            string itemPath = Path.Combine(path, item.Name);
             if (item.IsFolder)
             {
-                SetPath(itemPath);
+                SetPath(item.FullPath);
                 return;
             }
 
-            if (FilePickerHelper.IsBinary(itemPath))
+            if (resourceMode)
+            {
+                LoadResource(item);
+            }
+            else
+            {
+                LoadShader(item);
+            }
+        }
+
+        private void LoadResource(YALCTFilePickerItem item)
+        {
+            // TODO probably add some file error handling
+
+            if (Controller.Context.LoadTexture(item))
+            {
+                Controller.GoBack();
+            }
+        }
+
+        private void LoadShader(YALCTFilePickerItem item)
+        {
+            if (FilePickerHelper.IsBinary(item.FullPath))
             {
                 SetError("That's a binary file, not a shader, can't read it");
                 return;
             }
-            string content = File.ReadAllText(itemPath, Encoding.UTF8);
+            string content = File.ReadAllText(item.FullPath, Encoding.UTF8);
             if (content.Length > ShaderEditor.MAXEDITORSTRINGLENGTH)
             {
                 SetError("Woah there, that's a pretty long file mate, can't read it");

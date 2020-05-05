@@ -103,6 +103,7 @@ namespace YALCT
         {
             GetComponent<FilePicker>().SaveMode = false;
             GetComponent<FilePicker>().ShadertoyMode = shadertoy;
+            GetComponent<FilePicker>().ResourceMode = false;
             SetState(UIState.FilePicker);
         }
 
@@ -110,6 +111,15 @@ namespace YALCT
         {
             GetComponent<FilePicker>().SaveMode = true;
             GetComponent<FilePicker>().ShadertoyMode = false;
+            GetComponent<FilePicker>().ResourceMode = false;
+            SetState(UIState.FilePicker);
+        }
+
+        public void LoadResource()
+        {
+            GetComponent<FilePicker>().SaveMode = false;
+            GetComponent<FilePicker>().ShadertoyMode = false;
+            GetComponent<FilePicker>().ResourceMode = true;
             SetState(UIState.FilePicker);
         }
     }

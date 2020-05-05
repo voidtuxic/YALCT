@@ -266,6 +266,17 @@ namespace YALCT
             return ignoredExtensions.Any(ext => file.Contains(ext));
         }
 
+        // TODO handle more formats
+        private static string[] resourceExtensions = {
+            ".png",
+            ".jpg",
+            ".jpeg"
+        };
+        public static bool IsResourceExtension(string file)
+        {
+            return resourceExtensions.Any(ext => file.Contains(ext));
+        }
+
         // based off https://stackoverflow.com/a/26652983
         public static bool IsBinary(string path)
         {

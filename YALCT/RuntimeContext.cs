@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using ImGuiNET;
 using Veldrid;
+using Veldrid.ImageSharp;
 using Veldrid.Sdl2;
 using Veldrid.SPIRV;
 using Veldrid.StartupUtilities;
@@ -38,6 +40,10 @@ namespace YALCT
         private string currentFragmentShader;
         private int fragmentHeaderLineCount = -1;
 
+        private readonly List<Texture> textures = new List<Texture>();
+        private readonly List<TextureView> imguiTextureViews = new List<TextureView>();
+        private readonly List<YALCTShaderResource> imguiTextures = new List<YALCTShaderResource>();
+
         private ImGuiRenderer imGuiRenderer;
         private ImGuiController uiController;
 
@@ -57,6 +63,8 @@ namespace YALCT
                 return fragmentHeaderLineCount;
             }
         }
+
+        public List<YALCTShaderResource> ImguiTextures => imguiTextures;
 
         public RuntimeContext(GraphicsBackend backend)
         {
@@ -334,6 +342,42 @@ namespace YALCT
             imGuiRenderer.WindowResized(window.Width, window.Height);
         }
 
+        public bool LoadTexture(YALCTFilePickerItem item)
+        {
+            try
+            {
+                ImageSharpTexture imageSharpTex = new ImageSharpTexture(item.FullPath);
+                Texture texture = imageSharpTex.CreateDeviceTexture(graphicsDevice, factory);
+                // as per https://github.com/mellinoe/veldrid/issues/188
+                TextureView imguiTextureView = factory.CreateTextureView(new TextureViewDescription(texture, PixelFormat.R8_G8_B8_A8_UNorm_SRgb));
+                imguiTextureView.Name = item.Name;
+                IntPtr imguiBinding = imGuiRenderer.GetOrCreateImGuiBinding(factory, imguiTextureView);
+                textures.Add(texture);
+                imguiTextureViews.Add(imguiTextureView);
+                imguiTextures.Add(new YALCTShaderResource(item.Name, new Vector2(texture.Width, texture.Height), imguiBinding));
+            }
+            catch (Exception e)
+            {
+                uiController.SetError(e.Message);
+                return false;
+            }
+            return true;
+        }
+
+        private void DisposeTextures()
+        {
+            for (int i = 0; i < textures.Count; i++)
+            {
+                Texture texture = textures[i];
+                TextureView view = imguiTextureViews[i];
+                view.Dispose();
+                texture.Dispose();
+            }
+            textures.Clear();
+            imguiTextureViews.Clear();
+            imguiTextures.Clear();
+        }
+
         private void DisposeShaders()
         {
             if (shaders == null) return;
@@ -350,6 +394,7 @@ namespace YALCT
             DisposeShaders();
             resourceSet?.Dispose();
             resourceLayout?.Dispose();
+            DisposeTextures();
             commandList?.Dispose();
             runtimeDataBuffer?.Dispose();
             indexBuffer.Dispose();
