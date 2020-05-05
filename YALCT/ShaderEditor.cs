@@ -41,6 +41,7 @@ namespace YALCT
 // time (float) : total time in seconds since start
 // deltaTime (float) : time in seconds since last frame
 // frame (int) : current frame
+// use sample2D(InputTexN, uv) helper to sample an input texture
 
 void main()
 {
@@ -128,7 +129,7 @@ void main()
                             ImGui.SameLine(quarterWidth + 5);
                             if (ImGui.BeginChild($"resdata_{resource.UID}", new Vector2(0, quarterWidth), false))
                             {
-                                ImGui.Text(resource.Name);
+                                ImGui.Text($"InputTex{i}");
                                 ImGui.Text($"{resource.Size.X}x{resource.Size.Y}");
                                 if (ImGui.Button("Remove"))
                                 {
