@@ -364,6 +364,20 @@ namespace YALCT
             return true;
         }
 
+        public void RemoveTexture(YALCTShaderResource resource)
+        {
+            int resourceIndex = imguiTextures.IndexOf(resource);
+            if (resourceIndex != -1)
+            {
+                imguiTextureViews[resourceIndex].Dispose();
+                textures[resourceIndex].Dispose();
+
+                imguiTextures.RemoveAt(resourceIndex);
+                imguiTextureViews.RemoveAt(resourceIndex);
+                textures.RemoveAt(resourceIndex);
+            }
+        }
+
         private void DisposeTextures()
         {
             for (int i = 0; i < textures.Count; i++)

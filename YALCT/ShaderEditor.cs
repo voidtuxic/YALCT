@@ -17,6 +17,7 @@ namespace YALCT
         private const float HIDEUIHELPTEXTDURATION = 5f;
         private const float RESOURCESWINDOWWIDTH = 300f;
         private const float RESOURCESWINDOWHEIGHT = 600f;
+        private const float MAXTEXPREVIEWSIZE = 512f;
 
         private bool showUI = true;
         private float hideUIHelpTextDelta = 0;
@@ -108,16 +109,32 @@ void main()
                 ImGui.PushFont(RuntimeOptions.Current.EditorFont);
                 if (ImGui.BeginChild("Resource list", Vector2.Zero, false))
                 {
-                    foreach (YALCTShaderResource resource in Controller.Context.ImguiTextures)
+                    for (int i = 0; i < Controller.Context.ImguiTextures.Count; i++)
                     {
+                        YALCTShaderResource resource = Controller.Context.ImguiTextures[i];
                         if (ImGui.BeginChild($"resprops_{resource.UID}", new Vector2(0, quarterWidth), false))
                         {
                             ImGui.Image(resource.ImguiBinding, new Vector2(quarterWidth, quarterWidth));
+                            if (ImGui.IsItemHovered())
+                            {
+                                ImGui.GetStyle().Alpha = 1;
+                                ImGui.BeginTooltip();
+                                float scaler = resource.Size.X > resource.Size.Y ?
+                                    resource.Size.X / MAXTEXPREVIEWSIZE : resource.Size.Y / MAXTEXPREVIEWSIZE;
+                                ImGui.Image(resource.ImguiBinding, resource.Size / scaler);
+                                ImGui.EndTooltip();
+                                ImGui.GetStyle().Alpha = RuntimeOptions.Current.UiAlpha;
+                            }
                             ImGui.SameLine(quarterWidth + 5);
                             if (ImGui.BeginChild($"resdata_{resource.UID}", new Vector2(0, quarterWidth), false))
                             {
                                 ImGui.Text(resource.Name);
                                 ImGui.Text($"{resource.Size.X}x{resource.Size.Y}");
+                                if (ImGui.Button("Remove"))
+                                {
+                                    Controller.Context.RemoveTexture(resource);
+                                    return;
+                                }
                                 ImGui.EndChild();
                             }
                             ImGui.EndChild();
