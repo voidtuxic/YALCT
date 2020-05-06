@@ -202,6 +202,10 @@ void main()
                     {
                         Controller.SaveFile();
                     }
+                    if (ImGui.MenuItem("Pack"))
+                    {
+                        Controller.PackFile();
+                    }
                     ImGui.Separator();
                     if (ImGui.MenuItem("Start menu"))
                     {

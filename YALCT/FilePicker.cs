@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Numerics;
 using System.Text;
 using ImGuiNET;
@@ -21,6 +22,7 @@ namespace YALCT
         private bool saveMode = false;
         private bool shadertoyMode = false;
         private bool resourceMode = false;
+        private bool archiveMode = false;
         private string path;
         private string filename = "shader.glsl";
         private readonly YALCTFilePickerItem upperItem = new YALCTFilePickerItem(true, "..", "that ain't it chief", true);
@@ -33,6 +35,7 @@ namespace YALCT
         public bool SaveMode { get => saveMode; set => saveMode = value; }
         public bool ShadertoyMode { get => shadertoyMode; set => shadertoyMode = value; }
         public bool ResourceMode { get => resourceMode; set => resourceMode = value; }
+        public bool ArchiveMode { get => archiveMode; set => archiveMode = value; }
 
         public FilePicker(ImGuiController controller)
         {
@@ -130,9 +133,17 @@ namespace YALCT
                         }
                     }
                     ImGui.SameLine(MENUWIDTH - 80);
-                    if (ImGui.Button("Save shader"))
+                    string buttonLabel = archiveMode ? "Pack" : "Save";
+                    if (ImGui.Button($"{buttonLabel} shader"))
                     {
-                        SaveShader();
+                        if (archiveMode)
+                        {
+                            PackShader();
+                        }
+                        else
+                        {
+                            SaveShader();
+                        }
                     }
                 }
                 if (ImGui.BeginChild("currentfiles", Vector2.Zero, true, ImGuiWindowFlags.HorizontalScrollbar))
@@ -226,7 +237,6 @@ namespace YALCT
             Controller.SetState(UIState.Editor);
         }
 
-
         private void SaveShader()
         {
             ShaderEditor editor = Controller.GetComponent<ShaderEditor>();
@@ -237,6 +247,38 @@ namespace YALCT
         public void SaveShader(ShaderEditor editor)
         {
             string filePath = Path.Combine(path, filename);
+            File.WriteAllText(filePath, FormatShaderCode(editor), Encoding.UTF8);
+        }
+
+        private void PackShader()
+        {
+            ShaderEditor editor = Controller.GetComponent<ShaderEditor>();
+            PackShader(editor);
+            Controller.GoBack();
+        }
+
+        public void PackShader(ShaderEditor editor)
+        {
+            string filePath = Path.Combine(path, $"{filename}.zip");
+            using (FileStream archiveStream = new FileStream(filePath, FileMode.Create))
+            {
+                using (ZipArchive archive = new ZipArchive(archiveStream, ZipArchiveMode.Create))
+                {
+                    ZipArchiveEntry shaderEntry = archive.CreateEntry("shader.glsl");
+                    using (StreamWriter writer = new StreamWriter(shaderEntry.Open()))
+                    {
+                        writer.Write(FormatShaderCode(editor, true));
+                    }
+                    foreach (YALCTShaderResource resource in Controller.Context.ImguiTextures)
+                    {
+                        archive.CreateEntryFromFile(resource.FileItem.FullPath, Path.GetFileName(resource.FileItem.FullPath));
+                    }
+                }
+            }
+        }
+
+        private string FormatShaderCode(ShaderEditor editor, bool archiveMode = false)
+        {
             StringBuilder headerBuilder = new StringBuilder();
             headerBuilder.Append("/*");
             YALCTShaderMetadata metadata = editor.ShaderMetadata;
@@ -247,7 +289,14 @@ namespace YALCT
                 {
                     // get relative path
                     YALCTFilePickerItem item = resource.FileItem;
-                    item.FullPath = Path.GetRelativePath(path, item.FullPath).Replace("\\", "/");
+                    if (archiveMode)
+                    {
+                        item.FullPath = Path.GetFileName(item.FullPath);
+                    }
+                    else
+                    {
+                        item.FullPath = Path.GetRelativePath(path, item.FullPath).Replace("\\", "/");
+                    }
                     resourcePaths.Add(item);
                 }
                 metadata.ResourcePaths = resourcePaths.ToArray();
@@ -256,7 +305,7 @@ namespace YALCT
             headerBuilder.Append("*///");
             headerBuilder.AppendLine();
             string resourceHeader = headerBuilder.ToString();
-            File.WriteAllText(filePath, resourceHeader + editor.FragmentCode, Encoding.UTF8);
+            return resourceHeader + editor.FragmentCode;
         }
 
         public void Update(float deltaTime)
