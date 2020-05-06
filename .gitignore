@@ -37,4 +37,5 @@ msbuild.wrn
 .vs/
 
 imgui.ini
+options.ini
 shaders/

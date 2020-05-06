@@ -31,7 +31,8 @@ Credits in this hectic gif:
 ## Features
 
 - full GLSL v450 fragment shader support
-- load/save your shaders
+- texture input support
+- load/save your shaders or pack them into a zip archive for easier sharing
 - import (or at least try to) shadertoy shaders (doesn't support shaders with texture and sound inputs right now)
 - supports OpenGL, Vulkan, Direct3D11 and Metal
 - supports Windows 10, Linux and MacOS
@@ -132,7 +133,8 @@ Contributions are welcome, feel free to fork and open PRs. Here are some feature
 
 - editor with syntax highlight? Might be hard in the current state
 - actual working CI ? Github actions artifacts produce bugged executables
-- input textures
+- ISF shader import
+- Shadertoy/ISF export
 - input audio
 - more exotic inputs : game controllers, midi, OSC, why not some interaction with [OSSIA Score](https://ossia.io/)
 - server/p2p with viewer mode for multiuser sessions (for comps for instance)
