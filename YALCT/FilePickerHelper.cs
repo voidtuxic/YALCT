@@ -258,12 +258,11 @@ namespace YALCT
             ".xwd",
             ".xz",
             ".z",
-            ".zip",
             ".zipx"
         };
         public static bool IsIgnoredExtension(string file)
         {
-            return ignoredExtensions.Any(ext => file.Contains(ext));
+            return ignoredExtensions.Any(ext => file.EndsWith(ext));
         }
 
         // TODO handle more formats

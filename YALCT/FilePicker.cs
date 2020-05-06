@@ -210,6 +210,11 @@ namespace YALCT
 
         private void LoadShader(YALCTFilePickerItem item)
         {
+            if (item.FullPath.EndsWith(".zip"))
+            {
+                UnpackShader(item);
+                return;
+            }
             if (FilePickerHelper.IsBinary(item.FullPath))
             {
                 SetError("That's a binary file, not a shader, can't read it");
@@ -224,6 +229,23 @@ namespace YALCT
             SetError(null);
             filename = item.Name;
             LoadShader(content);
+        }
+
+        private void UnpackShader(YALCTFilePickerItem item)
+        {
+            path = Path.Combine(path, "unpacked/", item.Name);
+            try
+            {
+                using (ZipArchive archive = ZipFile.Open(item.FullPath, ZipArchiveMode.Update))
+                {
+                    archive.ExtractToDirectory(path, true);
+                }
+                LoadShader(new YALCTFilePickerItem(false, item.Name.Replace(".zip", ""), Path.Combine(path, "shader.glsl")));
+            }
+            catch (Exception e)
+            {
+                SetError(e.Message);
+            }
         }
 
         public void LoadShader(string shaderContent)
