@@ -4,6 +4,7 @@
 // time (float) : total time in seconds since start
 // deltaTime (float) : time in seconds since last frame
 // frame (int) : current frame
+// use sample2D(InputTexN, uv) helper to sample an input texture
 
 void main()
 {

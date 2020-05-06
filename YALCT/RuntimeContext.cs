@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using ImGuiNET;
 using Veldrid;
+using Veldrid.ImageSharp;
 using Veldrid.Sdl2;
 using Veldrid.SPIRV;
 using Veldrid.StartupUtilities;
@@ -37,6 +39,12 @@ namespace YALCT
         private Shader[] shaders;
         private string currentFragmentShader;
         private int fragmentHeaderLineCount = -1;
+        private bool forceRecreate;
+
+        private readonly List<Texture> textures = new List<Texture>();
+        private readonly List<TextureView> textureViews = new List<TextureView>();
+        private readonly List<TextureView> imguiTextureViews = new List<TextureView>();
+        private readonly List<YALCTShaderResource> imguiTextures = new List<YALCTShaderResource>();
 
         private ImGuiRenderer imGuiRenderer;
         private ImGuiController uiController;
@@ -57,6 +65,8 @@ namespace YALCT
                 return fragmentHeaderLineCount;
             }
         }
+
+        public List<YALCTShaderResource> ImguiTextures => imguiTextures;
 
         public RuntimeContext(GraphicsBackend backend)
         {
@@ -146,26 +156,28 @@ namespace YALCT
             // shaders
             string newFragmentShader;
             if (backend == GraphicsBackend.OpenGL)
-                newFragmentShader = fragmentHeaderCode + fragmentCode;
+                newFragmentShader = fragmentHeaderCode + BuildShaderResourceCode() + fragmentCode;
             else
-                newFragmentShader = fragmentHeaderCode + fragmentHeaderNonGLCode + fragmentCode;
-            if (currentFragmentShader != null && currentFragmentShader.Equals(newFragmentShader))
+                newFragmentShader = fragmentHeaderCode + BuildShaderResourceCode() + fragmentHeaderNonGLCode + fragmentCode;
+            if (!forceRecreate && currentFragmentShader != null && currentFragmentShader.Equals(newFragmentShader))
             {
-                uiController.SetError(null);
                 return;
             }
+            forceRecreate = false;
+
+            // shaders
             if (!isInitialized)
             {
                 vertexShaderDesc = CreateShaderDescription(VertexCode, ShaderStages.Vertex);
             }
+            currentFragmentShader = newFragmentShader;
             Shader[] newShaders;
             try
             {
-                ShaderDescription fragmentShaderDesc = CreateShaderDescription(newFragmentShader, ShaderStages.Fragment);
+                ShaderDescription fragmentShaderDesc = CreateShaderDescription(currentFragmentShader, ShaderStages.Fragment);
                 newShaders = factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
                 DisposeShaders();
                 shaders = newShaders;
-                currentFragmentShader = newFragmentShader;
                 uiController.SetError(null);
             }
             catch (Exception e)
@@ -174,14 +186,38 @@ namespace YALCT
                 return;
             }
 
-            // pipeline
-            ResourceLayoutElementDescription[] layoutDescriptions = new ResourceLayoutElementDescription[]
+            // resources
+            runtimeDataBuffer?.Dispose();
+            runtimeDataBuffer = factory.CreateBuffer(new BufferDescription(
+                YALCTRuntimeData.Size,
+                BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+            runtimeDataBuffer.Name = "YALCT Runtime Data";
+
+            List<ResourceLayoutElementDescription> layoutDescriptions = new List<ResourceLayoutElementDescription>
             {
                 new ResourceLayoutElementDescription ("RuntimeData", ResourceKind.UniformBuffer, ShaderStages.Fragment),
+                new ResourceLayoutElementDescription ("Sampler", ResourceKind.Sampler, ShaderStages.Fragment),
             };
+            List<BindableResource> bindableResources = new List<BindableResource> {
+                runtimeDataBuffer,
+                graphicsDevice.PointSampler
+            };
+            for (int i = 0; i < textureViews.Count; i++)
+            {
+                TextureView view = textureViews[i];
+                layoutDescriptions.Add(new ResourceLayoutElementDescription($"InputTex{i}", ResourceKind.TextureReadOnly, ShaderStages.Fragment));
+                bindableResources.Add(view);
+            }
             resourceLayout?.Dispose();
-            resourceLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(layoutDescriptions));
+            resourceLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(layoutDescriptions.ToArray()));
             resourceLayout.Name = "YALCT Resource Layout";
+
+            ResourceSetDescription resourceSetDescription = new ResourceSetDescription(resourceLayout, bindableResources.ToArray());
+            resourceSet?.Dispose();
+            resourceSet = factory.CreateResourceSet(resourceSetDescription);
+            resourceSet.Name = "YALCT Resource Set";
+
+            // pipeline
             pipeline?.Dispose();
             pipeline = factory.CreateGraphicsPipeline(
                    new GraphicsPipelineDescription(
@@ -209,17 +245,17 @@ namespace YALCT
                );
             pipeline.Name = "YALCT Fullscreen Pipeline";
 
-            runtimeDataBuffer?.Dispose();
-            runtimeDataBuffer = factory.CreateBuffer(new BufferDescription(
-                YALCTRuntimeData.Size,
-                BufferUsage.UniformBuffer | BufferUsage.Dynamic));
-            runtimeDataBuffer.Name = "YALCT Runtime Data";
-            BindableResource[] bindableResources = { runtimeDataBuffer };
-            ResourceSetDescription resourceSetDescription = new ResourceSetDescription(resourceLayout, bindableResources);
-            resourceSet?.Dispose();
-            resourceSet = factory.CreateResourceSet(resourceSetDescription);
-            resourceSet.Name = "YALCT Resource Set";
             isInitialized = true;
+        }
+
+        private string BuildShaderResourceCode()
+        {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < textureViews.Count; i++)
+            {
+                builder.AppendLine($"layout(set = 0, binding = {i + 2}) uniform texture2D InputTex{i};");
+            }
+            return builder.ToString();
         }
 
         private void CreateImGui()
@@ -334,6 +370,65 @@ namespace YALCT
             imGuiRenderer.WindowResized(window.Width, window.Height);
         }
 
+        public bool LoadTexture(YALCTFilePickerItem item)
+        {
+            try
+            {
+                ImageSharpTexture imageSharpTex = new ImageSharpTexture(item.FullPath);
+                Texture texture = imageSharpTex.CreateDeviceTexture(graphicsDevice, factory);
+                TextureView textureView = factory.CreateTextureView(texture);
+                textureView.Name = item.Name;
+                // as per https://github.com/mellinoe/veldrid/issues/188
+                TextureView imguiTextureView = factory.CreateTextureView(new TextureViewDescription(texture, PixelFormat.R8_G8_B8_A8_UNorm_SRgb));
+                imguiTextureView.Name = item.Name;
+                IntPtr imguiBinding = imGuiRenderer.GetOrCreateImGuiBinding(factory, imguiTextureView);
+                textures.Add(texture);
+                textureViews.Add(textureView);
+                imguiTextureViews.Add(imguiTextureView);
+                imguiTextures.Add(new YALCTShaderResource(item, new Vector2(texture.Width, texture.Height), imguiBinding));
+            }
+            catch (Exception e)
+            {
+                uiController.SetError(e.Message);
+                return false;
+            }
+            return true;
+        }
+
+        public void RemoveTexture(YALCTShaderResource resource)
+        {
+            int resourceIndex = imguiTextures.IndexOf(resource);
+            if (resourceIndex != -1)
+            {
+                imguiTextureViews[resourceIndex].Dispose();
+                textureViews[resourceIndex].Dispose();
+                textures[resourceIndex].Dispose();
+
+                imguiTextures.RemoveAt(resourceIndex);
+                imguiTextureViews.RemoveAt(resourceIndex);
+                textureViews.RemoveAt(resourceIndex);
+                textures.RemoveAt(resourceIndex);
+            }
+        }
+
+        public void DisposeTextures()
+        {
+            for (int i = 0; i < textures.Count; i++)
+            {
+                Texture texture = textures[i];
+                TextureView view = textureViews[i];
+                TextureView imguiView = imguiTextureViews[i];
+                view.Dispose();
+                imguiView.Dispose();
+                texture.Dispose();
+            }
+            textures.Clear();
+            textureViews.Clear();
+            imguiTextureViews.Clear();
+            imguiTextures.Clear();
+            forceRecreate = true;
+        }
+
         private void DisposeShaders()
         {
             if (shaders == null) return;
@@ -350,6 +445,7 @@ namespace YALCT
             DisposeShaders();
             resourceSet?.Dispose();
             resourceLayout?.Dispose();
+            DisposeTextures();
             commandList?.Dispose();
             runtimeDataBuffer?.Dispose();
             indexBuffer.Dispose();
@@ -375,7 +471,15 @@ layout(set = 0, binding = 0) uniform RuntimeData
     float deltaTime;
     int frame;
 };
-layout(location = 0) out vec4 out_Color;";
+layout(set = 0, binding = 1) uniform sampler Sampler;
+
+layout(location = 0) out vec4 out_Color;
+
+// sample helper function
+vec4 sample2D(texture2D sampledTexture, vec2 uv) {
+    return texture(sampler2D(sampledTexture, Sampler), uv);
+}
+";
 
         // considering shadertoy is truth on this
         public const string fragmentHeaderNonGLCode = @"
