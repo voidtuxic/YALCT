@@ -7,13 +7,15 @@ namespace YALCT
     {
         public string UID;
         public string Name;
+        public YALCTFilePickerItem FileItem;
         public Vector2 Size;
         public IntPtr ImguiBinding;
 
-        public YALCTShaderResource(string name, Vector2 size, IntPtr imguiBinding)
+        public YALCTShaderResource(YALCTFilePickerItem fileItem, Vector2 size, IntPtr imguiBinding)
         {
             UID = Guid.NewGuid().ToString("N");
-            Name = name;
+            Name = fileItem.Name;
+            FileItem = fileItem;
             Size = size;
             ImguiBinding = imguiBinding;
         }

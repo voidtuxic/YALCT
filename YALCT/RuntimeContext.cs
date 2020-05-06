@@ -374,16 +374,16 @@ namespace YALCT
             {
                 ImageSharpTexture imageSharpTex = new ImageSharpTexture(item.FullPath);
                 Texture texture = imageSharpTex.CreateDeviceTexture(graphicsDevice, factory);
-                // as per https://github.com/mellinoe/veldrid/issues/188
                 TextureView textureView = factory.CreateTextureView(texture);
                 textureView.Name = item.Name;
+                // as per https://github.com/mellinoe/veldrid/issues/188
                 TextureView imguiTextureView = factory.CreateTextureView(new TextureViewDescription(texture, PixelFormat.R8_G8_B8_A8_UNorm_SRgb));
                 imguiTextureView.Name = item.Name;
                 IntPtr imguiBinding = imGuiRenderer.GetOrCreateImGuiBinding(factory, imguiTextureView);
                 textures.Add(texture);
                 textureViews.Add(textureView);
                 imguiTextureViews.Add(imguiTextureView);
-                imguiTextures.Add(new YALCTShaderResource(item.Name, new Vector2(texture.Width, texture.Height), imguiBinding));
+                imguiTextures.Add(new YALCTShaderResource(item, new Vector2(texture.Width, texture.Height), imguiBinding));
             }
             catch (Exception e)
             {

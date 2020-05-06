@@ -222,7 +222,7 @@ namespace YALCT
             {
                 shaderContent = FilePickerHelper.ConvertShadertoy(shaderContent);
             }
-            editor.LoadShader(shaderContent);
+            editor.LoadShader(path, shaderContent);
             Controller.SetState(UIState.Editor);
         }
 
@@ -239,10 +239,21 @@ namespace YALCT
             string filePath = Path.Combine(path, filename);
             StringBuilder headerBuilder = new StringBuilder();
             headerBuilder.Append("/*");
-            headerBuilder.Append(JsonConvert.SerializeObject(editor.ShaderMetadata, Formatting.Indented));
+            YALCTShaderMetadata metadata = editor.ShaderMetadata;
+            if (Controller.Context.ImguiTextures.Count > 0)
+            {
+                List<YALCTFilePickerItem> resourcePaths = new List<YALCTFilePickerItem>();
+                foreach (YALCTShaderResource resource in Controller.Context.ImguiTextures)
+                {
+                    // get relative path
+                    YALCTFilePickerItem item = resource.FileItem;
+                    item.FullPath = Path.GetRelativePath(path, item.FullPath).Replace("\\", "/");
+                    resourcePaths.Add(item);
+                }
+                metadata.ResourcePaths = resourcePaths.ToArray();
+            }
+            headerBuilder.Append(JsonConvert.SerializeObject(metadata, Formatting.Indented));
             headerBuilder.Append("*/");
-            // add a few lines of breathing space
-            headerBuilder.AppendLine();
             headerBuilder.AppendLine();
             string resourceHeader = headerBuilder.ToString();
             File.WriteAllText(filePath, resourceHeader + editor.FragmentCode, Encoding.UTF8);

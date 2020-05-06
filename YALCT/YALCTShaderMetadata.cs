@@ -9,7 +9,7 @@ namespace YALCT
         public string Credit;
         public string Version;
         public List<string> Categories;
-        public string[] ResourcePaths;
+        public YALCTFilePickerItem[] ResourcePaths;
 
         public static YALCTShaderMetadata Default()
         {

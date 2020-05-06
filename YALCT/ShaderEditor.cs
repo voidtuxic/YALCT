@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
@@ -472,15 +473,26 @@ void main()
             Controller.Context.CreateDynamicResources(fragmentCode);
         }
 
-        public void LoadShader(string shaderContent)
+        public void LoadShader(string path, string shaderContent)
         {
             string[] shaderParts = shaderContent.Split("*/");
             if (shaderParts.Length > 1)
             {
                 string metadataJson = shaderParts[0].Skip(2).ToSystemString();
                 shaderMetadata = JsonConvert.DeserializeObject<YALCTShaderMetadata>(metadataJson);
-                // TODO sketchy, might not work on unix systems
-                fragmentCode = shaderParts[1].Skip(4).ToSystemString();
+                if (shaderMetadata.ResourcePaths != null)
+                {
+                    for (int i = 0; i < shaderMetadata.ResourcePaths.Length; i++)
+                    {
+                        // get absolute path
+                        YALCTFilePickerItem item = shaderMetadata.ResourcePaths[i];
+                        YALCTFilePickerItem transformedItem = item;
+                        transformedItem.FullPath = Path.Combine(path, item.FullPath);
+                        shaderMetadata.ResourcePaths[i] = transformedItem;
+                        Controller.Context.LoadTexture(transformedItem);
+                    }
+                }
+                fragmentCode = shaderParts[1].Trim('\r', '\n');
             }
             else
             {
