@@ -80,7 +80,7 @@ void main()
 
 ### API Support
 
-This has mostly been tested on Windows 10, but it does run on MacOS High Sierra and Ubuntu 19.10 in Virtualbox. Some more testing is required.
+This has mostly been tested on Windows 10, but it does run on MacOS High Sierra and Ubuntu 18.04. Some more testing is required.
 
 | API                   | Windows            | Linux              | MacOS              |
 | --------------------- | ------------------ | ------------------ | ------------------ |
