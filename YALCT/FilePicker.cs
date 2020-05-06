@@ -4,6 +4,7 @@ using System.IO;
 using System.Numerics;
 using System.Text;
 using ImGuiNET;
+using Newtonsoft.Json;
 using Veldrid;
 
 namespace YALCT
@@ -183,14 +184,17 @@ namespace YALCT
             }
         }
 
-        private void LoadResource(YALCTFilePickerItem item)
+        private bool LoadResource(YALCTFilePickerItem item, bool goBack = true)
         {
             // TODO probably add some file error handling
 
             if (Controller.Context.LoadTexture(item))
             {
-                Controller.GoBack();
+                if (goBack) Controller.GoBack();
+                return true;
             }
+
+            return false;
         }
 
         private void LoadShader(YALCTFilePickerItem item)
@@ -226,14 +230,22 @@ namespace YALCT
         private void SaveShader()
         {
             ShaderEditor editor = Controller.GetComponent<ShaderEditor>();
-            SaveShader(editor.FragmentCode);
+            SaveShader(editor);
             Controller.GoBack();
         }
 
-        public void SaveShader(string fragmentCode)
+        public void SaveShader(ShaderEditor editor)
         {
             string filePath = Path.Combine(path, filename);
-            File.WriteAllText(filePath, fragmentCode, Encoding.UTF8);
+            StringBuilder headerBuilder = new StringBuilder();
+            headerBuilder.Append("/*");
+            headerBuilder.Append(JsonConvert.SerializeObject(editor.ShaderMetadata, Formatting.Indented));
+            headerBuilder.Append("*/");
+            // add a few lines of breathing space
+            headerBuilder.AppendLine();
+            headerBuilder.AppendLine();
+            string resourceHeader = headerBuilder.ToString();
+            File.WriteAllText(filePath, resourceHeader + editor.FragmentCode, Encoding.UTF8);
         }
 
         public void Update(float deltaTime)

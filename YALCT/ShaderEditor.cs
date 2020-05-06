@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
 using ImGuiNET;
+using Newtonsoft.Json;
 using Veldrid;
 
 namespace YALCT
@@ -18,6 +19,8 @@ namespace YALCT
         private const float RESOURCESWINDOWWIDTH = 300f;
         private const float RESOURCESWINDOWHEIGHT = 600f;
         private const float MAXTEXPREVIEWSIZE = 512f;
+        private const float METADATAWINDOWWIDTH = 300f;
+        private const float METADATAWINDOWHEIGHT = 300f;
 
         private bool showUI = true;
         private float hideUIHelpTextDelta = 0;
@@ -35,6 +38,7 @@ namespace YALCT
         private string previousError = null;
         private readonly List<string> errorMessages = new List<string>();
 
+        private YALCTShaderMetadata shaderMetadata = YALCTShaderMetadata.Default();
         private string fragmentCode = @"// Available inputs
 // mouse (vec4) : x,y => position, z => mouse 1 down, z => mouse 2 down
 // resolution (vec2) : x,y => pixel size of the render window
@@ -51,8 +55,12 @@ void main()
 }";
         private readonly List<string> fragmentCodeLines = new List<string>();
 
+        private bool showMetadata;
+        private bool showResources = true;
+
         public ImGuiController Controller { get; private set; }
         public string FragmentCode => fragmentCode;
+        public YALCTShaderMetadata ShaderMetadata => shaderMetadata;
 
         public ShaderEditor(ImGuiController controller)
         {
@@ -72,6 +80,7 @@ void main()
                 SubmitMainMenu(deltaTime);
                 SubmitEditorWindow();
                 SubmitResourcesWindow();
+                SubmitMetadataWindow();
             }
             else
             {
@@ -95,13 +104,35 @@ void main()
             }
         }
 
+        private void SubmitMetadataWindow()
+        {
+            if (!showMetadata) return;
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
+            Vector2 size = RuntimeOptions.Current.GetScaledSize(METADATAWINDOWWIDTH, METADATAWINDOWHEIGHT);
+            float quarterWidth = size.X / 4;
+            ImGui.SetNextWindowSize(size);
+            if (ImGui.Begin("Metadata", ref showMetadata, ImGuiWindowFlags.NoResize))
+            {
+                ImGui.InputText("Name", ref shaderMetadata.Name, 1000);
+                ImGui.InputText("Credit", ref shaderMetadata.Credit, 1000);
+                ImGui.InputText("Version", ref shaderMetadata.Version, 1000);
+                ImGui.Text("Description");
+                ImGui.InputTextMultiline(
+                    "Description_input",
+                    ref shaderMetadata.Description,
+                    1000, new Vector2(size.X - 16, 160 * RuntimeOptions.Current.UiScale));
+                ImGui.End();
+            }
+        }
+
         private void SubmitResourcesWindow()
         {
+            if (!showResources) return;
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
             Vector2 size = RuntimeOptions.Current.GetScaledSize(RESOURCESWINDOWWIDTH, RESOURCESWINDOWHEIGHT);
             float quarterWidth = size.X / 4;
             ImGui.SetNextWindowSize(size);
-            if (ImGui.Begin("Resources", ImGuiWindowFlags.NoResize))
+            if (ImGui.Begin("Resources", ref showResources, ImGuiWindowFlags.NoResize))
             {
                 if (ImGui.Button("Add resource", new Vector2(size.X - 16, 30 * RuntimeOptions.Current.UiScale)))
                 {
@@ -164,7 +195,7 @@ void main()
                     }
                     if (ImGui.MenuItem("Save"))
                     {
-                        Controller.GetComponent<FilePicker>().SaveShader(fragmentCode);
+                        Controller.GetComponent<FilePicker>().SaveShader(this);
                     }
                     if (ImGui.MenuItem("Save as..."))
                     {
@@ -195,6 +226,16 @@ void main()
                 if (ImGui.MenuItem("Apply"))
                 {
                     Apply();
+                }
+
+                if (ImGui.MenuItem("Resources"))
+                {
+                    showResources = true;
+                }
+
+                if (ImGui.MenuItem("Metadata"))
+                {
+                    showMetadata = true;
                 }
 
                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20);
@@ -433,7 +474,19 @@ void main()
 
         public void LoadShader(string shaderContent)
         {
-            fragmentCode = shaderContent;
+            string[] shaderParts = shaderContent.Split("*/");
+            if (shaderParts.Length > 1)
+            {
+                string metadataJson = shaderParts[0].Skip(2).ToSystemString();
+                shaderMetadata = JsonConvert.DeserializeObject<YALCTShaderMetadata>(metadataJson);
+                // TODO sketchy, might not work on unix systems
+                fragmentCode = shaderParts[1].Skip(4).ToSystemString();
+            }
+            else
+            {
+                shaderMetadata = YALCTShaderMetadata.Default();
+                fragmentCode = shaderContent;
+            }
             SplitLines();
             Apply();
         }
