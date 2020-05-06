@@ -253,7 +253,7 @@ namespace YALCT
                 metadata.ResourcePaths = resourcePaths.ToArray();
             }
             headerBuilder.Append(JsonConvert.SerializeObject(metadata, Formatting.Indented));
-            headerBuilder.Append("*/");
+            headerBuilder.Append("*///");
             headerBuilder.AppendLine();
             string resourceHeader = headerBuilder.ToString();
             File.WriteAllText(filePath, resourceHeader + editor.FragmentCode, Encoding.UTF8);

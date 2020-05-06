@@ -475,32 +475,45 @@ void main()
 
         public void LoadShader(string path, string shaderContent)
         {
-            string[] shaderParts = shaderContent.Split("*/");
+            string[] shaderParts = shaderContent.Split("*///");
             if (shaderParts.Length > 1)
             {
-                string metadataJson = shaderParts[0].Skip(2).ToSystemString();
-                shaderMetadata = JsonConvert.DeserializeObject<YALCTShaderMetadata>(metadataJson);
-                if (shaderMetadata.ResourcePaths != null)
+                try
                 {
-                    for (int i = 0; i < shaderMetadata.ResourcePaths.Length; i++)
+                    string metadataJson = shaderParts[0].Skip(2).ToSystemString();
+                    shaderMetadata = JsonConvert.DeserializeObject<YALCTShaderMetadata>(metadataJson);
+                    if (shaderMetadata.ResourcePaths != null)
                     {
-                        // get absolute path
-                        YALCTFilePickerItem item = shaderMetadata.ResourcePaths[i];
-                        YALCTFilePickerItem transformedItem = item;
-                        transformedItem.FullPath = Path.Combine(path, item.FullPath);
-                        shaderMetadata.ResourcePaths[i] = transformedItem;
-                        Controller.Context.LoadTexture(transformedItem);
+                        for (int i = 0; i < shaderMetadata.ResourcePaths.Length; i++)
+                        {
+                            // get absolute path
+                            YALCTFilePickerItem item = shaderMetadata.ResourcePaths[i];
+                            YALCTFilePickerItem transformedItem = item;
+                            transformedItem.FullPath = Path.Combine(path, item.FullPath);
+                            shaderMetadata.ResourcePaths[i] = transformedItem;
+                            Controller.Context.LoadTexture(transformedItem);
+                        }
                     }
+                    fragmentCode = shaderParts[1].Trim('\r', '\n');
                 }
-                fragmentCode = shaderParts[1].Trim('\r', '\n');
+                catch
+                {
+                    // no metadata found, just load the entire code
+                    LoadShaderDefault(shaderContent);
+                }
             }
             else
             {
-                shaderMetadata = YALCTShaderMetadata.Default();
-                fragmentCode = shaderContent;
+                LoadShaderDefault(shaderContent);
             }
             SplitLines();
             Apply();
+        }
+
+        private void LoadShaderDefault(string shaderContent)
+        {
+            shaderMetadata = YALCTShaderMetadata.Default();
+            fragmentCode = shaderContent;
         }
     }
 }
