@@ -39,6 +39,7 @@ namespace YALCT
         private Shader[] shaders;
         private string currentFragmentShader;
         private int fragmentHeaderLineCount = -1;
+        private bool forceRecreate;
 
         private readonly List<Texture> textures = new List<Texture>();
         private readonly List<TextureView> textureViews = new List<TextureView>();
@@ -158,10 +159,11 @@ namespace YALCT
                 newFragmentShader = fragmentHeaderCode + BuildShaderResourceCode() + fragmentCode;
             else
                 newFragmentShader = fragmentHeaderCode + BuildShaderResourceCode() + fragmentHeaderNonGLCode + fragmentCode;
-            if (currentFragmentShader != null && currentFragmentShader.Equals(newFragmentShader))
+            if (!forceRecreate && currentFragmentShader != null && currentFragmentShader.Equals(newFragmentShader))
             {
                 return;
             }
+            forceRecreate = false;
 
             // shaders
             if (!isInitialized)
@@ -409,7 +411,7 @@ namespace YALCT
             }
         }
 
-        private void DisposeTextures()
+        public void DisposeTextures()
         {
             for (int i = 0; i < textures.Count; i++)
             {
@@ -424,6 +426,7 @@ namespace YALCT
             textureViews.Clear();
             imguiTextureViews.Clear();
             imguiTextures.Clear();
+            forceRecreate = true;
         }
 
         private void DisposeShaders()

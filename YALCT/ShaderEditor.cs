@@ -479,6 +479,7 @@ void main()
 
         public void LoadShader(string path, string shaderContent)
         {
+            Controller.Context.DisposeTextures();
             string[] shaderParts = shaderContent.Split("*///");
             if (shaderParts.Length > 1)
             {
